@@ -1,0 +1,45 @@
+name: Update MITRE ATT&CK Data
+
+on:
+  schedule:
+    # Weekly on Monday 00:00 UTC
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate MITRE data
+        run: npx tsx scripts/generate-mitre-data.ts
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet data/ public/data/ && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Create PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: update-mitre-data
+          title: "chore: update MITRE ATT&CK data (weekly sync)"
+          body: "Auto-generated PR from weekly STIX sync. Please review the diff before merging."
+          commit-message: "chore: update mitre_techniques.json from STIX"

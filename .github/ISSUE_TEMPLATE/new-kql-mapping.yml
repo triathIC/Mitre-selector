@@ -1,0 +1,106 @@
+name: New KQL mapping
+description: Propose a new or updated KQL detection/hunting mapping
+title: "[KQL] "
+labels: ["kql-mapping"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose a new KQL mapping or a change to an existing one.
+        See [CONTRIBUTING.md](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) for the full schema.
+
+  - type: input
+    id: technique_id
+    attributes:
+      label: Technique ID
+      description: MITRE technique or sub-technique (e.g. T1059, T1059.001)
+      placeholder: "T1059.001"
+    validations:
+      required: true
+
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      description: Short descriptive title for the mapping
+      placeholder: "Suspicious PowerShell with Encoded Command"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options:
+        - Microsoft Sentinel
+        - Defender XDR
+    validations:
+      required: true
+
+  - type: dropdown
+    id: query_type
+    attributes:
+      label: Query type
+      options:
+        - detection
+        - hunting
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - critical
+        - high
+        - medium
+        - low
+        - informational
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What the query detects and why it matters
+      placeholder: "Detects PowerShell processes launched with -EncodedCommand..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: kql
+    attributes:
+      label: KQL query
+      description: Full KQL (valid, tested). No placeholders.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: author
+    attributes:
+      label: Author
+      placeholder: "your-github-handle"
+    validations:
+      required: true
+
+  - type: input
+    id: last_tested
+    attributes:
+      label: Last tested (ISO date)
+      placeholder: "2025-03-01"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Confidence
+      options:
+        - experimental
+        - testing
+        - production
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Data connector, log sources, tuning notes, references

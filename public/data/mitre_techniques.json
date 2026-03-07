@@ -1,0 +1,52 @@
+[
+  {
+    "id": "T1059",
+    "name": "Command and Scripting Interpreter",
+    "parent_id": null,
+    "tactics": ["Execution"],
+    "platforms": ["Windows", "Linux", "macOS"],
+    "url": "https://attack.mitre.org/techniques/T1059/",
+    "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
+    "deprecated": false
+  },
+  {
+    "id": "T1059.001",
+    "name": "PowerShell",
+    "parent_id": "T1059",
+    "tactics": ["Execution"],
+    "platforms": ["Windows"],
+    "url": "https://attack.mitre.org/techniques/T1059/001/",
+    "description": "Adversaries may abuse PowerShell commands and scripts for execution.",
+    "deprecated": false
+  },
+  {
+    "id": "T1078",
+    "name": "Valid Accounts",
+    "parent_id": null,
+    "tactics": ["Persistence", "Privilege Escalation", "Defense Evasion", "Initial Access"],
+    "platforms": ["Windows", "Linux", "macOS", "Azure AD", "Office 365", "SaaS"],
+    "url": "https://attack.mitre.org/techniques/T1078/",
+    "description": "Adversaries may obtain and abuse credentials of existing accounts as a means of gaining access.",
+    "deprecated": false
+  },
+  {
+    "id": "T1566",
+    "name": "Phishing",
+    "parent_id": null,
+    "tactics": ["Initial Access"],
+    "platforms": ["Windows", "Linux", "macOS", "Azure AD", "Office 365", "Google Workspace", "SaaS"],
+    "url": "https://attack.mitre.org/techniques/T1566/",
+    "description": "Adversaries may send phishing messages to gain access to victim systems.",
+    "deprecated": false
+  },
+  {
+    "id": "T1021",
+    "name": "Remote Services",
+    "parent_id": null,
+    "tactics": ["Lateral Movement"],
+    "platforms": ["Windows", "Linux", "macOS"],
+    "url": "https://attack.mitre.org/techniques/T1021/",
+    "description": "Adversaries may use Valid Accounts to log into a service specifically designed to accept remote connections.",
+    "deprecated": false
+  }
+]
