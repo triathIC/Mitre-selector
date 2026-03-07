@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import type { DataStore, KqlMapping, MitreTechnique } from "@/types";
+import type { KqlMapping, MitreTechnique } from "@/types";
 import { buildDataStore } from "@/utils/dataTransform";
 import { useAppContext } from "@/context/AppContext";
 
-const MITRE_JSON = "/data/mitre_techniques.json";
-const KQL_JSON = "/data/kql_mappings.json";
+const BASE = import.meta.env.BASE_URL;
+const MITRE_JSON = `${BASE}data/mitre_techniques.json`;
+const KQL_JSON = `${BASE}data/kql_mappings.json`;
 
 /**
  * Fetches both JSON data sources in parallel, builds DataStore, and dispatches to context.
