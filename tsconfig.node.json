@@ -8,7 +8,8 @@
     "noEmit": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "types": ["node"]
   },
   "include": ["vite.config.ts", "scripts"]
 }
