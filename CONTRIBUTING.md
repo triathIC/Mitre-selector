@@ -1,55 +1,69 @@
-# Contributing to MITRE ATT&CK KQL Explorer
+# Contributing
 
-Thank you for contributing detection and hunting content. This project bridges MITRE ATT&CK techniques with production-ready KQL for Microsoft Sentinel and Defender XDR.
+KQL detection and hunting queries are the core of this project. Contributions welcome.
 
-## KQL mapping contributions
+## How to contribute KQL queries
 
-### Where to contribute
+1. Fork the repo
+2. Add your mapping to `data/kql_mappings.json`
+3. Follow the `KqlMapping` interface in [`src/types/index.ts`](src/types/index.ts)
+4. Submit a PR
 
-- **KQL content**: Edit or add entries in `public/data/kql_mappings.json` (or `data/kql_mappings.json` if you use a different setup).
-- **Do not** edit `mitre_techniques.json` by hand — it is generated from MITRE STIX via `scripts/generate-mitre-data.ts`.
+## KQL quality requirements
 
-### KQL mapping requirements
+- **Syntactically valid KQL** — no pseudocode, no placeholders, no `// TODO`
+- **Real Microsoft table and column names** — `DeviceProcessEvents`, `SigninLogs`, `SecurityEvent`, etc.
+- **`technique_id` must exist** in `data/mitre_techniques.json`
+- **`last_tested` must be a valid ISO 8601 date** (e.g. `2025-03-01`)
+- **At least one reference URL** — MITRE technique page or Microsoft Docs
+- **Description explaining what the query detects and why** — 2-3 sentences minimum
 
-Each entry in `kql_mappings.json` must conform to the `KqlMapping` schema:
+### Table → Data connector mapping
 
-| Field | Required | Notes |
-|-------|----------|--------|
-| `mapping_id` | Yes | Format: `KQL-{technique_id}-{3-digit}` (e.g. `KQL-T1059.001-001`) |
-| `technique_id` | Yes | MITRE technique or sub-technique ID (e.g. `T1059`, `T1059.001`) |
-| `product` | Yes | `"Microsoft Sentinel"` or `"Defender XDR"` |
-| `data_connector` | Yes | Required connector in Sentinel (e.g. `"Microsoft Defender for Endpoint"`) |
-| `log_sources` | Yes | Array of log tables used (e.g. `["DeviceProcessEvents"]`) |
-| `query_type` | Yes | `"detection"` or `"hunting"` |
-| `severity` | Yes | `"informational"` \| `"low"` \| `"medium"` \| `"high"` \| `"critical"` |
-| `title` | Yes | Short descriptive title |
-| `description` | Yes | What the query detects and why it matters |
-| `kql` | Yes | Valid, tested KQL — no placeholders or pseudocode |
-| `tags` | Yes | Searchable tags (e.g. `["powershell", "execution"]`) |
-| `author` | Yes | Your name or GitHub handle |
-| `references` | Yes | Array of URLs (MITRE, docs, research) |
-| `last_tested` | Yes | ISO 8601 date when query was last validated |
-| `version` | Yes | Integer; start at 1, increment when `kql` changes |
-| `confidence` | Yes | `"experimental"` \| `"testing"` \| `"production"` |
-| `tuning_notes` | No | Optional deployment and tuning guidance |
+| Table | `data_connector` |
+|-------|------------------|
+| `DeviceProcessEvents`, `DeviceNetworkEvents`, `DeviceFileEvents`, `DeviceRegistryEvents` | Microsoft Defender for Endpoint |
+| `SigninLogs`, `AuditLogs`, `AADSignInEventsBeta` | Microsoft Entra ID |
+| `SecurityEvent` | Windows Security Events via AMA |
+| `EmailEvents`, `EmailAttachmentInfo` | Microsoft Defender for Office 365 |
 
-### Quality bar
+## Mapping ID convention
 
-- **KQL**: Must run against the stated product and log sources. No dummy tables or placeholders.
-- **Uniqueness**: Prefer one mapping per distinct detection idea; use a new `mapping_id` for variants (e.g. different products or severities).
-- **Attribution**: Keep `author` and `references` accurate so others can trace and tune.
+Format: `KQL-{technique_id}-{3-digit-sequence}`
 
-### Submitting
+- Detection queries use **odd** numbers: `001`, `003`, `005`
+- Hunting queries use **even** numbers: `002`, `004`, `006`
 
-1. Open an issue using the [New KQL mapping](/.github/ISSUE_TEMPLATE/new-kql-mapping.yml) template (if available), or describe your mapping in a PR.
-2. Add or edit the mapping in `public/data/kql_mappings.json`.
-3. Open a pull request. A maintainer will review and merge.
+Example: `KQL-T1059.001-001` (detection), `KQL-T1059.001-002` (hunting)
 
-## Code contributions
+## Severity and confidence
 
-- Follow the project’s TypeScript and React patterns (functional components, named exports, strict types).
-- Run `npm run lint` and `npm run build` before submitting.
+Contributors self-assess both fields. Maintainers may adjust during review.
 
-## License
+**Severity** — how impactful is the detected behavior?
 
-By contributing, you agree that your contributions will be licensed under the same [MIT License](LICENSE) as the project.
+| Level | Guideline |
+|-------|-----------|
+| `critical` | Immediate threat — active ransomware, credential dumping |
+| `high` | Strong indicator of compromise — download cradles, defense evasion |
+| `medium` | Suspicious but context-dependent — persistence mechanisms, policy changes |
+| `low` | Informational, broad hunting — anomaly baselines, reconnaissance |
+| `informational` | Purely observational, no direct threat signal |
+
+**Confidence** — how reliably does this query detect the technique?
+
+| Level | Guideline |
+|-------|-----------|
+| `production` | Low false-positive rate, tested in real environments |
+| `testing` | Solid logic but not validated in production |
+| `experimental` | Broad hunting query, expect false positives, needs tuning |
+
+## What we don't accept
+
+- Untested queries or queries copied without validation
+- Queries without a description
+- Duplicate mappings for the same technique without meaningful differentiation (different product, different detection angle, or different log source)
+
+## Reporting issues
+
+Use [GitHub Issues](https://github.com/triathIC/Mitre-selector/issues). Bug reports and feature requests welcome.
