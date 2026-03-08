@@ -6,7 +6,7 @@ Interactive MITRE ATT&CK matrix mapped to production-ready KQL queries for Micro
 
 ## Use it
 
-Open the live app: [mitre-selector.vercel.app](https://mitre-selector.vercel.app)
+Open the live app: [mitre.triath.xyz](https://mitre.triath.xyz)
 
 No setup required. Browse the matrix, click a technique, copy the KQL.
 
