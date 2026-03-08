@@ -24,7 +24,12 @@ export function MatrixView({ dataStore }: MatrixViewProps): JSX.Element {
   );
 
   const tactics = dataStore.tactics;
-  const effectiveTactic = mobileTactic || tactics[0];
+  const firstTactic = tactics[0];
+  const effectiveTactic = (mobileTactic || firstTactic) as MitreTactic | undefined;
+
+  if (!effectiveTactic) {
+    return <div className="p-4 text-gray-500">No tactics available.</div>;
+  }
 
   return (
     <>

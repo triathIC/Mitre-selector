@@ -97,7 +97,6 @@ function TechniqueCellComponent({
             if (!child) return null;
             const childMappings = getMappingCount(id);
             const childDimmed = !techniqueMatchesFilter(id);
-            const childSelected = false;
             return (
               <TechniqueCellComponent
                 key={id}

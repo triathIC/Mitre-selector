@@ -5,7 +5,7 @@ import { Button } from "@/components/ui";
 export interface TechniqueHeaderProps {
   technique: MitreTechnique;
   onClose: () => void;
-  closeButtonRef?: React.RefObject<HTMLButtonElement | null>;
+  closeButtonRef?: React.Ref<HTMLButtonElement>;
 }
 
 export function TechniqueHeader({ technique, onClose, closeButtonRef }: TechniqueHeaderProps): JSX.Element {

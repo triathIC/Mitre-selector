@@ -12,7 +12,6 @@ function tokenizeKql(kql: string): Array<{ type: string; text: string }> {
   const commentRegex = /\/\/[^\n]*/g;
   const stringRegex = /"(?:[^"\\]|\\.)*"|'[^']*'/g;
 
-  let lastIndex = 0;
   const sources: Array<{ start: number; end: number; type: string }> = [];
 
   function addMatch(regex: RegExp, type: string): void {
@@ -32,7 +31,8 @@ function tokenizeKql(kql: string): Array<{ type: string; text: string }> {
 
   const merged: Array<{ start: number; end: number; type: string }> = [];
   for (const s of sources) {
-    if (merged.length > 0 && s.start < merged[merged.length - 1].end) continue;
+    const last = merged[merged.length - 1];
+    if (last && s.start < last.end) continue;
     merged.push(s);
   }
 
