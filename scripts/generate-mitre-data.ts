@@ -8,17 +8,29 @@
 const STIX_URL =
   "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json";
 
+interface StixExternalRef {
+  source_name?: string;
+  external_id?: string;
+  url?: string;
+}
+
+interface StixKillChainPhase {
+  kill_chain_name?: string;
+  phase_name?: string;
+}
+
 interface StixObject {
   type: string;
-  id?: string;
+  id: string;
   name?: string;
   description?: string;
   revoked?: boolean;
   x_mitre_deprecated?: boolean;
-  x_mitre_external_id?: string;
-  kill_chain_phases?: Array< { phase_name?: string }>;
+  x_mitre_is_subtechnique?: boolean;
   x_mitre_platforms?: string[];
-  external_references?: Array< { source_name?: string; url?: string }>;
+  x_mitre_domains?: string[];
+  kill_chain_phases?: StixKillChainPhase[];
+  external_references?: StixExternalRef[];
   relationship_type?: string;
   source_ref?: string;
   target_ref?: string;
@@ -36,34 +48,34 @@ interface MitreTechniqueOut {
 }
 
 const PLATFORM_MAP: Record<string, string> = {
-  "Windows": "Windows",
-  "Linux": "Linux",
-  "macOS": "macOS",
-  "PRE": "Azure AD",
+  Windows: "Windows",
+  Linux: "Linux",
+  macOS: "macOS",
+  PRE: "Azure AD",
+  "Azure AD": "Azure AD",
   "Office 365": "Office 365",
   "Google Workspace": "Google Workspace",
-  "SaaS": "SaaS",
-  "IaaS": "IaaS",
-  "Network": "Network",
-  "Containers": "Containers",
+  SaaS: "SaaS",
+  IaaS: "IaaS",
+  Network: "Network",
+  Containers: "Containers",
 };
 
-/** STIX phase_name (e.g. "initial-access") → MitreTactic display name */
 const TACTIC_MAP: Record<string, string> = {
-  "reconnaissance": "Reconnaissance",
+  reconnaissance: "Reconnaissance",
   "resource-development": "Resource Development",
   "initial-access": "Initial Access",
-  "execution": "Execution",
-  "persistence": "Persistence",
+  execution: "Execution",
+  persistence: "Persistence",
   "privilege-escalation": "Privilege Escalation",
   "defense-evasion": "Defense Evasion",
   "credential-access": "Credential Access",
-  "discovery": "Discovery",
+  discovery: "Discovery",
   "lateral-movement": "Lateral Movement",
-  "collection": "Collection",
+  collection: "Collection",
   "command-and-control": "Command and Control",
-  "exfiltration": "Exfiltration",
-  "impact": "Impact",
+  exfiltration: "Exfiltration",
+  impact: "Impact",
 };
 
 function normalizePlatform(p: string): string {
@@ -71,8 +83,21 @@ function normalizePlatform(p: string): string {
 }
 
 function normalizeTactic(phaseName: string): string {
-  const key = phaseName.toLowerCase().replace(/\s+/g, "-");
-  return TACTIC_MAP[key] ?? phaseName;
+  return TACTIC_MAP[phaseName] ?? phaseName;
+}
+
+function getExternalId(obj: StixObject): string | null {
+  const ref = obj.external_references?.find(
+    (r) => r.source_name === "mitre-attack" && r.external_id
+  );
+  return ref?.external_id ?? null;
+}
+
+function getMitreUrl(obj: StixObject, fallbackId: string): string {
+  const ref = obj.external_references?.find(
+    (r) => r.source_name === "mitre-attack" && r.url
+  );
+  return ref?.url ?? `https://attack.mitre.org/techniques/${fallbackId.replace(".", "/")}/`;
 }
 
 async function main(): Promise<void> {
@@ -83,59 +108,81 @@ async function main(): Promise<void> {
   }
   const bundle = (await res.json()) as { objects?: StixObject[] };
   const objects = bundle.objects ?? [];
+  console.log("Total STIX objects:", objects.length);
 
   const attackPatterns = objects.filter(
-    (o): o is StixObject & { x_mitre_external_id: string } =>
-      o.type === "attack-pattern" && typeof o.x_mitre_external_id === "string"
+    (o) =>
+      o.type === "attack-pattern" &&
+      getExternalId(o) !== null &&
+      (o.x_mitre_domains === undefined ||
+        o.x_mitre_domains.includes("enterprise-attack"))
   );
+  console.log("Attack patterns (with external ID):", attackPatterns.length);
 
-  const relationships = objects.filter(
-    (o) => o.type === "relationship" && o.relationship_type === "x-mitre-is-subtechnique-of"
-  );
-
-  const idToRef = new Map<string, string>();
+  // STIX internal id → external technique id (e.g. "attack-pattern--xxx" → "T1059")
+  const stixIdToExternalId = new Map<string, string>();
   for (const ap of attackPatterns) {
-    if (ap.id && ap.x_mitre_external_id) {
-      idToRef.set(ap.id, ap.x_mitre_external_id);
-    }
+    const extId = getExternalId(ap);
+    if (extId) stixIdToExternalId.set(ap.id, extId);
   }
-  const refToParent = new Map<string, string>();
-  for (const r of relationships) {
+
+  // Parent resolution via "subtechnique-of" relationships
+  const subtechniqueRels = objects.filter(
+    (o) =>
+      o.type === "relationship" &&
+      o.relationship_type === "subtechnique-of" &&
+      o.revoked !== true
+  );
+  console.log("Subtechnique-of relationships:", subtechniqueRels.length);
+
+  const childToParent = new Map<string, string>();
+  for (const r of subtechniqueRels) {
     if (r.source_ref && r.target_ref) {
-      const parentId = idToRef.get(r.target_ref);
-      const childId = idToRef.get(r.source_ref);
-      if (parentId && childId) refToParent.set(childId, parentId);
+      const childExtId = stixIdToExternalId.get(r.source_ref);
+      const parentExtId = stixIdToExternalId.get(r.target_ref);
+      if (childExtId && parentExtId) {
+        childToParent.set(childExtId, parentExtId);
+      }
     }
   }
 
   const techniques: MitreTechniqueOut[] = [];
+  let skippedRevoked = 0;
+  let skippedDeprecated = 0;
+
   for (const ap of attackPatterns) {
-    if (ap.revoked === true) continue;
-    if (ap.x_mitre_deprecated === true) continue;
-    const externalId = ap.x_mitre_external_id!;
-    const tactics =
-      ap.kill_chain_phases?.map((p) => normalizeTactic(p.phase_name ?? "")).filter(Boolean) ?? [];
-    const mitreRef = ap.external_references?.find(
-      (e) => e.source_name === "mitre-attack"
-    );
-    const url = mitreRef?.url ?? `https://attack.mitre.org/techniques/${externalId.replace(".", "/")}/`;
+    if (ap.revoked === true) {
+      skippedRevoked++;
+      continue;
+    }
+    if (ap.x_mitre_deprecated === true) {
+      skippedDeprecated++;
+      continue;
+    }
+
+    const externalId = getExternalId(ap)!;
+    const tactics = (ap.kill_chain_phases ?? [])
+      .filter((p) => p.kill_chain_name === "mitre-attack" && p.phase_name)
+      .map((p) => normalizeTactic(p.phase_name!))
+      .filter(Boolean);
+
     const platforms = (ap.x_mitre_platforms ?? []).map(normalizePlatform);
+    const url = getMitreUrl(ap, externalId);
 
     techniques.push({
       id: externalId,
       name: ap.name ?? externalId,
-      parent_id: refToParent.get(externalId) ?? null,
+      parent_id: childToParent.get(externalId) ?? null,
       tactics,
       platforms,
       url,
-      description: ap.description ?? "",
-      deprecated: ap.x_mitre_deprecated ?? false,
+      description: (ap.description ?? "").split("\n")[0] ?? "",
+      deprecated: false,
     });
   }
 
   techniques.sort((a, b) => a.id.localeCompare(b.id));
 
-  const out = JSON.stringify(techniques, null, 2);
   const fs = await import("node:fs");
   const path = await import("node:path");
   const { fileURLToPath } = await import("node:url");
@@ -143,6 +190,8 @@ async function main(): Promise<void> {
   const root = path.resolve(__dirname, "..");
   const dataDir = path.join(root, "data");
   const publicDataDir = path.join(root, "public", "data");
+
+  const out = JSON.stringify(techniques, null, 2);
 
   for (const dir of [dataDir, publicDataDir]) {
     fs.mkdirSync(dir, { recursive: true });
@@ -153,10 +202,18 @@ async function main(): Promise<void> {
 
   const topLevel = techniques.filter((t) => t.parent_id === null).length;
   const subCount = techniques.length - topLevel;
-  console.log("Summary: %d techniques (%d top-level, %d sub-techniques), %d tactics", techniques.length, topLevel, subCount, new Set(techniques.flatMap((t) => t.tactics)).size);
+  const tacticSet = new Set(techniques.flatMap((t) => t.tactics));
+
+  console.log("---");
+  console.log("Summary:");
+  console.log("  Total techniques: %d (%d top-level, %d sub-techniques)", techniques.length, topLevel, subCount);
+  console.log("  Tactics covered:  %d", tacticSet.size);
+  console.log("  Skipped revoked:  %d", skippedRevoked);
+  console.log("  Skipped deprecated: %d", skippedDeprecated);
+  console.log("  Tactics:", [...tacticSet].sort().join(", "));
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err);
   process.exit(1);
 });
