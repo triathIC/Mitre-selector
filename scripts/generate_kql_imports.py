@@ -1,0 +1,1690 @@
+#!/usr/bin/env python3
+"""
+Generate kql_mappings.json with imported queries from public repositories.
+Reads existing mappings, appends new adapted queries, validates, and writes output.
+"""
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+MAPPINGS_FILE = ROOT / "data" / "kql_mappings.json"
+TECHNIQUES_FILE = ROOT / "data" / "mitre_techniques.json"
+
+def load_existing():
+    with open(MAPPINGS_FILE) as f:
+        return json.load(f)
+
+def load_technique_ids():
+    with open(TECHNIQUES_FILE) as f:
+        return {t["id"] for t in json.load(f) if not t.get("deprecated", False)}
+
+# ─── Batch 1: Bert-JanP/Hunting-Queries-Detection-Rules ───────────────────────
+
+BATCH_1 = [
+    {
+        "mapping_id": "KQL-T1490-001",
+        "technique_id": "T1490",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "critical",
+        "title": "Shadow Copy Deletion or System Recovery Tampering",
+        "description": "Detects execution of commands associated with shadow copy deletion and system recovery disabling. Ransomware operators routinely delete volume shadow copies and disable system restore before encrypting files to prevent rollback.",
+        "kql": (
+            "let RecoveryTamperCommands = dynamic([\n"
+            "    'vssadmin.exe delete shadows /all /quiet',\n"
+            "    'wmic.exe shadowcopy delete',\n"
+            "    'wbadmin delete catalog -quiet',\n"
+            "    'wbadmin delete systemstatebackup -keepVersions:0',\n"
+            "    'Get-WmiObject Win32_Shadowcopy | ForEach-Object {$_.Delete();}',\n"
+            "    'bcdedit /set {default} recoveryenabled no'\n"
+            "]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ProcessCommandLine has_any (RecoveryTamperCommands)\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["impact", "ransomware", "shadow-copy", "recovery", "vssadmin"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1490/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/ShadowCopyDeletion.md",
+            "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/vssadmin-delete-shadows"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "Backup solutions (Veeam, Commvault) may legitimately interact with shadow copies. Exclude known backup service accounts and scheduled backup process names."
+    },
+    {
+        "mapping_id": "KQL-T1490-002",
+        "technique_id": "T1490",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "hunting",
+        "severity": "high",
+        "title": "System Restore and Backup Disablement Survey",
+        "description": "Surveys all commands that disable system restore, delete backup catalogs, or modify boot configuration to prevent recovery over the past 7 days. Captures pre-ransomware staging activity that may precede encryption by hours or days.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(7d)\n"
+            "| where ProcessCommandLine has_any (\n"
+            "    'vssadmin', 'wbadmin', 'bcdedit', 'shadowcopy',\n"
+            "    'SystemRestore', 'recoveryenabled', 'delete shadows',\n"
+            "    'delete catalog', 'DisableSR', 'DisableConfig'\n"
+            ")\n"
+            "| summarize CommandCount = count(), Commands = make_set(ProcessCommandLine, 10), Devices = dcount(DeviceName) by FileName, AccountName, bin(Timestamp, 1d)\n"
+            "| sort by CommandCount desc"
+        ),
+        "tags": ["impact", "ransomware", "shadow-copy", "recovery", "hunting"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1490/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/ShadowCopyDeletion.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "bcdedit is also used legitimately for dual-boot configuration. Correlate with other ransomware indicators before escalation."
+    },
+    {
+        "mapping_id": "KQL-T1070.001-001",
+        "technique_id": "T1070.001",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Windows Security Event Log Cleared",
+        "description": "Detects the SecurityLogCleared action type, indicating the Windows Security event log was purged. Clearing security logs is a common defense evasion step to remove evidence of compromise activities.",
+        "kql": (
+            "DeviceEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ActionType == \"SecurityLogCleared\"\n"
+            "| project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFileName, ActionType\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "indicator-removal", "event-log", "log-clearing"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1070/001/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/SecurityLogCleared.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production"
+    },
+    {
+        "mapping_id": "KQL-T1070.001-002",
+        "technique_id": "T1070.001",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "hunting",
+        "severity": "medium",
+        "title": "Event Log Clearing via Wevtutil or PowerShell",
+        "description": "Hunts for usage of wevtutil.exe clear-log or PowerShell Clear-EventLog commands over the past 7 days. These utilities allow selective or bulk clearing of Windows event logs to cover tracks.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(7d)\n"
+            "| where (FileName =~ \"wevtutil.exe\" and ProcessCommandLine has_any (\"cl\", \"clear-log\"))\n"
+            "    or (FileName in~ (\"powershell.exe\", \"pwsh.exe\") and ProcessCommandLine has \"Clear-EventLog\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "indicator-removal", "wevtutil", "event-log"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1070/001/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/WevtutilClearLogs.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Some log rotation scripts use wevtutil. Correlate with the account context — system accounts clearing logs during maintenance windows are expected."
+    },
+    {
+        "mapping_id": "KQL-T1505.003-001",
+        "technique_id": "T1505.003",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Web Shell Activity — Suspicious Process Spawned by Web Server",
+        "description": "Detects cmd.exe, powershell.exe, or shell interpreters spawned as child processes of IIS (w3wp.exe), Apache (httpd.exe), nginx, or Tomcat. This parent-child relationship is a strong indicator of web shell execution on a compromised server.",
+        "kql": (
+            "let WebServers = dynamic([\"beasvc.exe\", \"coldfusion.exe\", \"httpd.exe\", \"owstimer.exe\", \"visualsvnserver.exe\", \"w3wp.exe\", \"tomcat\", \"apache2\", \"nginx\"]);\n"
+            "let ShellProcesses = dynamic([\"powershell.exe\", \"powershell_ise.exe\", \"cmd.exe\", \"bash\", \"sh\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where InitiatingProcessParentFileName in~ (WebServers) or InitiatingProcessFileName in~ (WebServers)\n"
+            "| where FileName in~ (ShellProcesses) or InitiatingProcessFileName in~ (ShellProcesses)\n"
+            "| where FileName !in~ (\"csc.exe\", \"php-cgi.exe\", \"conhost.exe\")\n"
+            "| project Timestamp, DeviceName, FileName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessParentFileName, AccountName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["persistence", "web-shell", "iis", "initial-access", "server"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1505/003/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/WebshellDetection.md",
+            "https://www.microsoft.com/en-us/security/blog/2021/02/11/web-shell-attacks-continue-to-rise/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "PHP-CGI and ASP.NET compilation (csc.exe) can legitimately spawn from w3wp.exe. Tune exclusions based on your web application stack."
+    },
+    {
+        "mapping_id": "KQL-T1552-001",
+        "technique_id": "T1552",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Cleartext Password Detected in Process Command Line",
+        "description": "Detects command-line executions containing explicit password arguments (e.g., net use, runas, cmdkey with -password flags). Cleartext passwords in process arguments are logged and recoverable by attackers with access to process telemetry.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ProcessCommandLine has_any (\"-password\", \"/password\", \"-p \", \"--password\")\n"
+            "| where ProcessCommandLine has_any (\"net use\", \"net user\", \"runas\", \"cmdkey\", \"psexec\", \"schtasks\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["credential-access", "unsecured-credentials", "cleartext-password", "command-line"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1552/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/CommandlineWithClearTextPassword.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Automation scripts and deployment tools may pass credentials via CLI. Build an exclusion list based on known service accounts and deployment tooling."
+    },
+    {
+        "mapping_id": "KQL-T1003.003-001",
+        "technique_id": "T1003.003",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceFileEvents"],
+        "query_type": "detection",
+        "severity": "critical",
+        "title": "NTDS.dit File Access or Modification Detected",
+        "description": "Detects file modification activity targeting the NTDS.dit Active Directory database. Adversaries extract this file to perform offline credential dumping of all domain accounts using tools like secretsdump or ntdissector.",
+        "kql": (
+            "DeviceFileEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName has \"ntds\" and FileName has \"dit\"\n"
+            "| where ActionType in (\"FileModified\", \"FileCreated\", \"FileRenamed\")\n"
+            "| project Timestamp, DeviceName, FileName, FolderPath, ActionType, InitiatingProcessFileName, InitiatingProcessAccountName, InitiatingProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["credential-access", "ntds", "active-directory", "credential-dumping", "critical"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1003/003/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/NTDSDitFileModifications.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "AD backup solutions (Windows Server Backup, Veeam) access NTDS.dit as part of system state backups. Exclude known backup process names like ntdsutil.exe during scheduled backup windows."
+    },
+    {
+        "mapping_id": "KQL-T1018-001",
+        "technique_id": "T1018",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceNetworkEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Anomalous SMB Session Volume Indicating Network Reconnaissance",
+        "description": "Detects a single device creating more than 50 unique SMB (port 445) connections within 15 minutes. This behavior is characteristic of BloodHound/SharpHound collectors and other Active Directory enumeration tools performing lateral movement path discovery.",
+        "kql": (
+            "let Threshold = 50;\n"
+            "DeviceNetworkEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where RemotePort == 445\n"
+            "| summarize TotalIPs = dcount(RemoteIP), RemoteIPs = make_set(RemoteIP, 20) by DeviceName, InitiatingProcessFileName, InitiatingProcessAccountName, bin(Timestamp, 15m)\n"
+            "| where TotalIPs >= Threshold\n"
+            "| project Timestamp, DeviceName, InitiatingProcessFileName, InitiatingProcessAccountName, TotalIPs, RemoteIPs\n"
+            "| sort by TotalIPs desc"
+        ),
+        "tags": ["discovery", "remote-system-discovery", "smb", "bloodhound", "enumeration"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1018/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/AnomalousSMBSessionsCreated.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Vulnerability scanners (Nessus, Qualys) and SCCM will trigger this pattern. Exclude scanner IPs and management servers. Adjust Threshold based on network size."
+    },
+    {
+        "mapping_id": "KQL-T1557-001",
+        "technique_id": "T1557",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["SigninLogs"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Potential Adversary-in-the-Middle Phishing via OfficeHome Application",
+        "description": "Detects sign-in events through the OfficeHome application from unregistered devices (empty deviceId). AiTM phishing kits (Evilginx, EvilProxy) commonly proxy through OfficeHome as the default application, and the absent device registration indicates a non-corporate machine.",
+        "kql": (
+            "SigninLogs\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where AppDisplayName == \"OfficeHome\"\n"
+            "| where UserPrincipalName has \"@\"\n"
+            "| extend deviceId = tostring(DeviceDetail.deviceId)\n"
+            "| where isempty(deviceId)\n"
+            "| summarize RiskLevels = make_set(RiskLevelDuringSignIn), ResultTypes = make_set(ResultType), IPs = make_set(IPAddress) by CorrelationId, UserPrincipalName, IPAddress, Location\n"
+            "| sort by UserPrincipalName asc"
+        ),
+        "tags": ["credential-access", "aitm", "phishing", "adversary-in-the-middle", "evilginx"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1557/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Azure%20Active%20Directory/PotentialAiTMPhishing.md",
+            "https://techcommunity.microsoft.com/t5/azure-data-explorer-blog/aitm-amp-bec-threat-hunting-with-kql/ba-p/3885166"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "BYOD environments will have higher baseline of empty deviceId sign-ins. Cross-reference with RiskLevelDuringSignIn values — filter to only 'medium' or 'high' risk for lower false-positive rate."
+    },
+    {
+        "mapping_id": "KQL-T1047-001",
+        "technique_id": "T1047",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "WMIC Remote Command Execution with Target IP",
+        "description": "Detects WMIC.exe executions containing IP addresses in the command line, indicating remote WMI calls. Adversaries use WMIC for remote process creation, reconnaissance, and lateral movement without deploying additional tools.",
+        "kql": (
+            "let IPRegex = '[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}';\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName =~ \"WMIC.exe\"\n"
+            "| extend RemoteIP = extract(IPRegex, 0, ProcessCommandLine)\n"
+            "| where isnotempty(RemoteIP)\n"
+            "| where RemoteIP != \"127.0.0.1\"\n"
+            "| project Timestamp, DeviceName, AccountName, ProcessCommandLine, RemoteIP, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["execution", "wmi", "wmic", "lateral-movement", "remote-execution"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1047/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/Living%20Off%20The%20Land/WMICRemoteCommand.md",
+            "https://lolbas-project.github.io/lolbas/Binaries/Wmic/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "SCCM and enterprise management tools use WMIC remotely. Exclude known management server IPs and service accounts."
+    },
+    {
+        "mapping_id": "KQL-T1040-001",
+        "technique_id": "T1040",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "low",
+        "title": "Windows Native Packet Capture via PktMon or Netsh",
+        "description": "Detects usage of pktmon.exe or netsh trace for network packet capture on Windows. Attackers use built-in packet capture tools to sniff credentials and sensitive data traversing the network without deploying third-party sniffers.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where (FileName =~ \"pktmon.exe\")\n"
+            "    or (FileName =~ \"netsh.exe\" and ProcessCommandLine has \"trace\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["discovery", "credential-access", "network-sniffing", "pktmon", "netsh"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1040/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/WindowsNetworkSniffing.md",
+            "https://learn.microsoft.com/en-us/windows-server/networking/technologies/pktmon/pktmon"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Network administrators may use pktmon for troubleshooting. Correlate with the user account — non-admin users running packet captures warrant investigation."
+    },
+    {
+        "mapping_id": "KQL-T1218.005-001",
+        "technique_id": "T1218.005",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Mshta.exe Spawning Suspicious Child Processes",
+        "description": "Detects mshta.exe launching cmd.exe, powershell.exe, rundll32.exe, or other processes commonly used in attack chains. Mshta executes HTA files and is abused as a proxy to run malicious scripts while evading application whitelisting.",
+        "kql": (
+            "let SuspiciousChildren = dynamic([\"cmd.exe\", \"powershell.exe\", \"bash.exe\", \"cscript.exe\", \"msiexec.exe\", \"rundll32.exe\", \"regsvr32.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where InitiatingProcessFileName =~ \"mshta.exe\" or ProcessVersionInfoOriginalFileName =~ \"MSHTA.EXE\"\n"
+            "| where FileName in~ (SuspiciousChildren)\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "execution", "mshta", "proxy-execution", "lolbin"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1218/005/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/MshtaExecutions.md",
+            "https://redcanary.com/threat-detection-report/techniques/mshta/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production"
+    },
+    {
+        "mapping_id": "KQL-T1218.010-001",
+        "technique_id": "T1218.010",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Regsvr32 Launched by Microsoft Office Application",
+        "description": "Detects regsvr32.exe spawned as a child process of Word, Excel, or PowerPoint. This chain indicates a macro or exploit in a document is using regsvr32 to proxy execution of a malicious DLL, commonly seen in TA551 and Qakbot campaigns.",
+        "kql": (
+            "let OfficeApps = dynamic([\"winword.exe\", \"powerpnt.exe\", \"excel.exe\", \"outlook.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName =~ \"regsvr32.exe\"\n"
+            "| where InitiatingProcessFileName in~ (OfficeApps)\n"
+            "| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "execution", "regsvr32", "proxy-execution", "office-macro"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1218/010/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/Regsvr32StartedByOfficeApplication.md",
+            "https://redcanary.com/threat-detection-report/threats/TA551/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production"
+    },
+    {
+        "mapping_id": "KQL-T1105-001",
+        "technique_id": "T1105",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Certutil Used for Remote File Download",
+        "description": "Detects certutil.exe used with -urlcache and -f flags to download files from remote URLs. Adversaries abuse certutil as a living-off-the-land binary to stage tools and payloads, bypassing security controls that don't inspect native Windows utilities.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName =~ \"certutil.exe\"\n"
+            "| where ProcessCommandLine has \"urlcache\" and ProcessCommandLine has \"-f\" and ProcessCommandLine has_any (\"http\", \"ftp\")\n"
+            "| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["command-and-control", "ingress-tool-transfer", "certutil", "lolbin", "download"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1105/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/Living%20Off%20The%20Land/CertutilRemoteDownload.md",
+            "https://lolbas-project.github.io/lolbas/Binaries/Certutil/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production"
+    },
+    {
+        "mapping_id": "KQL-T1218-002",
+        "technique_id": "T1218",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceNetworkEvents"],
+        "query_type": "hunting",
+        "severity": "medium",
+        "title": "Rare LOLBin Making External Network Connection",
+        "description": "Identifies living-off-the-land binaries making outbound connections to public IPs that have not been observed doing so in the preceding 30 days. Novel LOLBin network activity indicates potential C2 communication or tool staging via system binaries.",
+        "kql": (
+            "let LOLBins = dynamic([\"certutil.exe\", \"mshta.exe\", \"regsvr32.exe\", \"rundll32.exe\", \"cscript.exe\", \"wscript.exe\", \"msiexec.exe\", \"bitsadmin.exe\", \"cmd.exe\", \"powershell.exe\", \"wmic.exe\", \"hh.exe\", \"msbuild.exe\", \"installutil.exe\", \"cmstp.exe\", \"esentutl.exe\", \"expand.exe\", \"extrac32.exe\", \"findstr.exe\", \"forfiles.exe\"]);\n"
+            "let KnownRemote = DeviceNetworkEvents\n"
+            "| where Timestamp between (ago(30d) .. ago(2d))\n"
+            "| where InitiatingProcessFileName in~ (LOLBins)\n"
+            "| where RemoteIPType == \"Public\"\n"
+            "| distinct InitiatingProcessFileName;\n"
+            "DeviceNetworkEvents\n"
+            "| where Timestamp > ago(2d)\n"
+            "| where InitiatingProcessFileName in~ (LOLBins)\n"
+            "| where RemoteIPType == \"Public\"\n"
+            "| where InitiatingProcessFileName !in~ (KnownRemote)\n"
+            "| project Timestamp, DeviceName, InitiatingProcessFileName, InitiatingProcessCommandLine, RemoteIP, RemotePort, InitiatingProcessAccountName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "proxy-execution", "lolbin", "network", "anomaly"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1218/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/Living%20Off%20The%20Land/NewLOLBinExternalConnection.md",
+            "https://lolbas-project.github.io/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "Browser-related LOLBins (msedge.exe) should be excluded. Split analysis by workstations vs. servers for more precise baselining."
+    },
+    {
+        "mapping_id": "KQL-T1059-001",
+        "technique_id": "T1059",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Explorer.exe Spawning Suspicious Scripting Process",
+        "description": "Detects explorer.exe launching cmd.exe, powershell.exe, mshta.exe, or other scripting engines with suspicious parameters (URLs, encoded commands). This pattern is associated with ClickFix social engineering attacks and initial access via drive-by downloads.",
+        "kql": (
+            "let Parameters = dynamic([\"http\", \"https\", \"Encoded\", \"EncodedCommand\", \"-e\", \"-eC\", \"-enc\", \"-w\", \"://\"]);\n"
+            "let SuspiciousChildren = dynamic([\"cmd.exe\", \"powershell.exe\", \"bash.exe\", \"cscript.exe\", \"mshta.exe\", \"msiexec.exe\", \"rundll32.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where InitiatingProcessFileName =~ \"explorer.exe\"\n"
+            "| where FileName in~ (SuspiciousChildren)\n"
+            "| where ProcessCommandLine has_any (Parameters)\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["execution", "command-interpreter", "explorer", "clickfix", "social-engineering"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1059/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/SuspiciousExplorerChildProcess.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Legitimate software installations can trigger from explorer.exe context. Focus on encoded commands and URL parameters as stronger indicators."
+    },
+    {
+        "mapping_id": "KQL-T1556-001",
+        "technique_id": "T1556",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["AuditLogs"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Conditional Access Policy Deleted in Entra ID",
+        "description": "Detects deletion of Conditional Access policies in Microsoft Entra ID. Removing CA policies weakens authentication controls and can establish persistence by eliminating MFA requirements or trusted location restrictions for compromised accounts.",
+        "kql": (
+            "AuditLogs\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where OperationName == \"Delete conditional access policy\"\n"
+            "| extend DeletedPolicy = tostring(TargetResources[0].displayName)\n"
+            "| extend Actor = tostring(InitiatedBy.user.userPrincipalName)\n"
+            "| extend ActorIP = tostring(InitiatedBy.user.ipAddress)\n"
+            "| project TimeGenerated, Actor, ActorIP, DeletedPolicy, CorrelationId\n"
+            "| sort by TimeGenerated desc"
+        ),
+        "tags": ["persistence", "defense-evasion", "conditional-access", "azure-ad", "authentication"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1556/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Azure%20Active%20Directory/ConditionalAccess%20-%20DeletePolicy.md",
+            "https://learn.microsoft.com/en-us/entra/identity/conditional-access/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production"
+    },
+    {
+        "mapping_id": "KQL-T1553.005-001",
+        "technique_id": "T1553.005",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceFileEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "ISO or IMG Disk Image File Created from External Source",
+        "description": "Detects creation of ISO, IMG, or VHD files on endpoints. These container formats bypass Mark-of-the-Web protections since files extracted from mounted images do not inherit the MOTW flag, allowing malware to execute without SmartScreen warnings.",
+        "kql": (
+            "DeviceFileEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ActionType == \"FileCreated\"\n"
+            "| where FileName endswith_any (\".iso\", \".img\", \".vhd\", \".vhdx\")\n"
+            "| where FolderPath has_any (\"\\\\Downloads\\\\\", \"\\\\Temp\\\\\", \"\\\\Desktop\\\\\", \"\\\\AppData\\\\\")\n"
+            "| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessFileName, InitiatingProcessAccountName, SHA256\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "mark-of-the-web", "iso", "initial-access", "disk-image"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1553/005/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/RareISOFile.md",
+            "https://redcanary.com/blog/iso-files/"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Developers and IT staff may download legitimate ISO images. Cross-reference with email attachment logs and filter known Linux distribution or software ISO hashes."
+    },
+]
+
+# ─── Batch 2: FalconForce + Cyb3r-Monk ────────────────────────────────────────
+
+BATCH_2 = [
+    {
+        "mapping_id": "KQL-T1134-001",
+        "technique_id": "T1134",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Process Elevated to SeDebugPrivilege Token",
+        "description": "Detects processes whose primary token was elevated to include SeDebugPrivilege. This privilege allows reading and writing to any process memory and is required for credential dumping tools. Legitimate use outside debugging is rare and warrants investigation.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ProcessCommandLine has_any (\"privilege::debug\", \"SeDebugPrivilege\", \"AdjustTokenPrivileges\")\n"
+            "| where FileName !in~ (\"MsMpEng.exe\", \"svchost.exe\", \"csrss.exe\", \"lsass.exe\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["privilege-escalation", "defense-evasion", "token-manipulation", "sedebug"],
+        "author": "FalconForce Team (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1134/",
+            "https://github.com/FalconForceTeam/FalconFriday"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Debugging tools (Visual Studio, WinDbg) legitimately request SeDebugPrivilege. Exclude developer workstations or known debugging process names."
+    },
+    {
+        "mapping_id": "KQL-T1482-001",
+        "technique_id": "T1482",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Domain Trust Discovery via nltest or dsquery",
+        "description": "Detects execution of nltest /domain_trusts, dsquery, or similar domain trust enumeration commands. After gaining initial access, adversaries enumerate trust relationships to identify paths for cross-domain lateral movement.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where (FileName =~ \"nltest.exe\" and ProcessCommandLine has_any (\"/domain_trusts\", \"/dclist\", \"/dsgetdc\"))\n"
+            "    or (FileName =~ \"dsquery.exe\" and ProcessCommandLine has \"trustedDomain\")\n"
+            "    or (ProcessCommandLine has \"Get-ADTrust\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["discovery", "domain-trust", "nltest", "active-directory", "reconnaissance"],
+        "author": "FalconForce Team (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1482/",
+            "https://github.com/FalconForceTeam/FalconFriday"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "AD administrators run nltest for troubleshooting. Correlate with the account context — standard user accounts running nltest are suspicious."
+    },
+    {
+        "mapping_id": "KQL-T1021.002-001",
+        "technique_id": "T1021.002",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceNetworkEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Remote File Copy via SMB Admin Share",
+        "description": "Detects outbound SMB connections (port 445) from a device to multiple internal hosts, combined with file write activity. This pattern indicates lateral movement via administrative shares (C$, ADMIN$) to deploy tools or malware across the network.",
+        "kql": (
+            "DeviceNetworkEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where RemotePort == 445\n"
+            "| where ActionType == \"ConnectionSuccess\"\n"
+            "| where ipv4_is_private(RemoteIP)\n"
+            "| summarize TargetHosts = dcount(RemoteIP), HostList = make_set(RemoteIP, 20), ConnectionCount = count() by DeviceName, InitiatingProcessFileName, InitiatingProcessAccountName, bin(Timestamp, 1h)\n"
+            "| where TargetHosts >= 3\n"
+            "| project Timestamp, DeviceName, InitiatingProcessFileName, InitiatingProcessAccountName, TargetHosts, HostList, ConnectionCount\n"
+            "| sort by TargetHosts desc"
+        ),
+        "tags": ["lateral-movement", "smb", "admin-share", "file-copy", "windows"],
+        "author": "FalconForce Team (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1021/002/",
+            "https://github.com/FalconForceTeam/FalconFriday"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "File servers and backup agents communicate to many hosts via SMB. Exclude known file server hostnames and backup service accounts."
+    },
+    {
+        "mapping_id": "KQL-T1219-001",
+        "technique_id": "T1219",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Unauthorized Remote Access Tool Execution Detected",
+        "description": "Detects execution of known remote access and remote monitoring tools (AnyDesk, TeamViewer, ScreenConnect, NetSupport) that are not part of the standard corporate toolset. Threat actors deploy RMM tools for persistent remote access that blends with legitimate IT activity.",
+        "kql": (
+            "let RATProcesses = dynamic([\"AnyDesk.exe\", \"TeamViewer.exe\", \"ScreenConnect.WindowsClient.exe\", \"ConnectWiseControl.Client.exe\", \"client32.exe\", \"Splashtop.exe\", \"RemotePC.exe\", \"LogMeIn.exe\", \"GoToAssist.exe\", \"rustdesk.exe\", \"meshagent.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName in~ (RATProcesses) or ProcessVersionInfoProductName has_any (\"AnyDesk\", \"TeamViewer\", \"ScreenConnect\", \"NetSupport\", \"Splashtop\", \"RustDesk\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["command-and-control", "remote-access", "rmm", "anydesk", "teamviewer"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1219/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/Detect_Known_RAT_RMM_Process_Patterns.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "Remove tools from the detection list that are approved for your organization. If TeamViewer is sanctioned, exclude it. Focus on tools running from non-standard paths (Temp, Downloads)."
+    },
+    {
+        "mapping_id": "KQL-T1219-002",
+        "technique_id": "T1219",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceNetworkEvents"],
+        "query_type": "hunting",
+        "severity": "low",
+        "title": "RMM Tool Network Connections to External Infrastructure",
+        "description": "Surveys outbound network connections made by known remote monitoring and management tools over the past 7 days. Maps which RMM tools are active in the environment and which external IPs they connect to for baseline establishment.",
+        "kql": (
+            "let RMMProcesses = dynamic([\"AnyDesk.exe\", \"TeamViewer.exe\", \"ScreenConnect.WindowsClient.exe\", \"ConnectWiseControl.Client.exe\", \"client32.exe\", \"Splashtop.exe\", \"RemotePC.exe\", \"rustdesk.exe\", \"meshagent.exe\"]);\n"
+            "DeviceNetworkEvents\n"
+            "| where Timestamp > ago(7d)\n"
+            "| where InitiatingProcessFileName in~ (RMMProcesses)\n"
+            "| where RemoteIPType == \"Public\"\n"
+            "| summarize ConnectionCount = count(), UniqueIPs = dcount(RemoteIP), IPs = make_set(RemoteIP, 10) by InitiatingProcessFileName, DeviceName, bin(Timestamp, 1d)\n"
+            "| sort by ConnectionCount desc"
+        ),
+        "tags": ["command-and-control", "remote-access", "rmm", "hunting", "network"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1219/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/Network%20-%20AnyDeskConnectionToPublicIP.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental"
+    },
+    {
+        "mapping_id": "KQL-T1485-001",
+        "technique_id": "T1485",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["AuditLogs"],
+        "query_type": "detection",
+        "severity": "critical",
+        "title": "Mass Cloud Resource Deletion Detected",
+        "description": "Detects a single identity deleting more than 10 cloud resources (applications, groups, service principals) within 1 hour. Bulk deletion indicates a destructive attack on cloud infrastructure, potentially by a compromised admin account.",
+        "kql": (
+            "AuditLogs\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where OperationName startswith \"Delete\"\n"
+            "| extend Actor = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName))\n"
+            "| extend Resource = tostring(TargetResources[0].displayName)\n"
+            "| summarize DeletionCount = count(), Resources = make_set(Resource, 20), Operations = make_set(OperationName) by Actor, bin(TimeGenerated, 1h)\n"
+            "| where DeletionCount >= 10\n"
+            "| sort by DeletionCount desc"
+        ),
+        "tags": ["impact", "data-destruction", "cloud", "azure-ad", "bulk-deletion"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1485/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Cloud%20Audit%20Events/CloudResourceDeletion.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Infrastructure cleanup scripts during decommissioning will trigger this. Adjust DeletionCount threshold based on your change management cadence."
+    },
+    {
+        "mapping_id": "KQL-T1489-001",
+        "technique_id": "T1489",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Critical Service Termination via taskkill or net stop",
+        "description": "Detects command-line termination of database, backup, or security services using taskkill or net stop. Ransomware operators kill SQL, Exchange, and backup services to release file locks before encryption and to prevent recovery.",
+        "kql": (
+            "let CriticalServices = dynamic([\"sqlservr\", \"sqlwriter\", \"mssqlserver\", \"mysql\", \"oracle\", \"veeam\", \"backup\", \"exchange\", \"msdtc\", \"iisadmin\", \"w3svc\", \"sophos\", \"symantec\", \"cylance\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where (FileName =~ \"taskkill.exe\" or FileName =~ \"net.exe\" or FileName =~ \"net1.exe\" or FileName =~ \"sc.exe\")\n"
+            "| where ProcessCommandLine has_any (CriticalServices)\n"
+            "| where ProcessCommandLine has_any (\"stop\", \"/f\", \"kill\", \"delete\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["impact", "service-stop", "ransomware", "database", "pre-encryption"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1489/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Threat%20Hunting/Behaviour%20-%20KillSQLProcesses.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "Maintenance scripts and patching processes may stop services. Correlate with change management windows and known automation accounts."
+    },
+    {
+        "mapping_id": "KQL-T1518.001-001",
+        "technique_id": "T1518.001",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "low",
+        "title": "Security Software Discovery via WMIC or PowerShell",
+        "description": "Detects WMIC or PowerShell queries enumerating installed antivirus and security products. Adversaries perform security software discovery to identify active defenses before selecting evasion techniques or disabling specific security tools.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where (FileName =~ \"wmic.exe\" and ProcessCommandLine has_any (\"AntiVirusProduct\", \"antivirus\", \"SecurityCenter\"))\n"
+            "    or (FileName in~ (\"powershell.exe\", \"pwsh.exe\") and ProcessCommandLine has_any (\"Get-MpComputerStatus\", \"Get-MpPreference\", \"AntiVirusProduct\", \"SecurityCenter2\"))\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["discovery", "security-software-discovery", "wmic", "defense-evasion"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1518/001/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Defender%20For%20Endpoint/WMICAntivirusDiscovery.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Endpoint management tools (SCCM, Intune) query antivirus status as part of compliance checks. Exclude known management service accounts."
+    },
+    {
+        "mapping_id": "KQL-T1069-002",
+        "technique_id": "T1069",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "hunting",
+        "severity": "low",
+        "title": "Permission Groups Discovery via Net.exe Commands",
+        "description": "Hunts for net.exe and net1.exe commands performing group enumeration (net group, net localgroup, net user /domain). Multiple group discovery commands from a single device indicate post-compromise reconnaissance mapping out privilege boundaries.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(7d)\n"
+            "| where FileName in~ (\"net.exe\", \"net1.exe\")\n"
+            "| where ProcessCommandLine has_any (\"group\", \"localgroup\", \"user /domain\", \"accounts\")\n"
+            "| summarize CommandCount = count(), Commands = make_set(ProcessCommandLine, 10), UniqueDevices = dcount(DeviceName) by AccountName, bin(Timestamp, 1d)\n"
+            "| where CommandCount >= 3\n"
+            "| sort by CommandCount desc"
+        ),
+        "tags": ["discovery", "permission-groups", "net-exe", "enumeration", "reconnaissance"],
+        "author": "FalconForce Team (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1069/",
+            "https://github.com/FalconForceTeam/FalconFriday"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Helpdesk and IT operations frequently run net commands. Set minimum CommandCount threshold based on normal admin activity volume."
+    },
+    {
+        "mapping_id": "KQL-T1087-002",
+        "technique_id": "T1087",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "hunting",
+        "severity": "low",
+        "title": "Account and Domain Discovery Command Burst",
+        "description": "Hunts for bursts of account and domain discovery commands (whoami, net user, dsquery, klist, hostname, systeminfo) from a single device within a short window. Multiple sequential discovery commands indicate automated or manual post-compromise reconnaissance.",
+        "kql": (
+            "let DiscoveryTools = dynamic([\"whoami.exe\", \"hostname.exe\", \"systeminfo.exe\", \"ipconfig.exe\", \"tasklist.exe\", \"dsquery.exe\", \"klist.exe\", \"query.exe\", \"qwinsta.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(7d)\n"
+            "| where FileName in~ (DiscoveryTools)\n"
+            "    or (FileName in~ (\"net.exe\", \"net1.exe\") and ProcessCommandLine has_any (\"user\", \"group\", \"domain\"))\n"
+            "| summarize ToolCount = dcount(FileName), Tools = make_set(FileName), CommandCount = count() by DeviceName, AccountName, bin(Timestamp, 30m)\n"
+            "| where ToolCount >= 3\n"
+            "| sort by ToolCount desc"
+        ),
+        "tags": ["discovery", "account-discovery", "reconnaissance", "enumeration", "post-compromise"],
+        "author": "FalconForce Team (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1087/",
+            "https://github.com/FalconForceTeam/FalconFriday"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "System administrators running health checks will match. Filter by account type — standard user accounts running 3+ discovery tools in 30 minutes are highly suspicious."
+    },
+    {
+        "mapping_id": "KQL-T1114-001",
+        "technique_id": "T1114",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft 365",
+        "log_sources": ["OfficeActivity"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Suspicious Mailbox Access via Delegated or Application Permissions",
+        "description": "Detects mailbox access events using delegated or application-level permissions to access mailboxes outside the authenticated user's own. This pattern indicates BEC (Business Email Compromise) or insider threat activity where attackers read emails from compromised accounts.",
+        "kql": (
+            "OfficeActivity\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where Operation in (\"MailItemsAccessed\", \"MailboxLogin\")\n"
+            "| where UserId != MailboxOwnerUPN\n"
+            "| where ResultStatus == \"Succeeded\"\n"
+            "| project TimeGenerated, UserId, MailboxOwnerUPN, Operation, ClientIPAddress, UserAgent\n"
+            "| sort by TimeGenerated desc"
+        ),
+        "tags": ["collection", "email-collection", "bec", "mailbox-access", "delegation"],
+        "author": "FalconForce Team (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1114/",
+            "https://github.com/FalconForceTeam/FalconFriday"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Shared mailboxes and delegate access are common. Exclude known shared mailbox UPNs and service accounts with legitimate delegated access."
+    },
+    {
+        "mapping_id": "KQL-T1566.002-001",
+        "technique_id": "T1566.002",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Office 365",
+        "log_sources": ["EmailEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Spearphishing Link with URL Rewrite Trigger Delivered",
+        "description": "Detects delivered emails where Safe Links triggered a detection on a URL click, indicating the recipient interacted with a potentially malicious link in a phishing email. URL click-time detonation catches threats that pass initial email scanning.",
+        "kql": (
+            "EmailEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where DeliveryAction == \"Delivered\"\n"
+            "| where ThreatTypes has \"Phish\" or DetectionMethods has_any (\"URL detonation\", \"URL reputation\")\n"
+            "| project Timestamp, SenderFromAddress, RecipientEmailAddress, Subject, ThreatTypes, DetectionMethods, DeliveryAction\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["initial-access", "phishing", "spearphishing-link", "safe-links", "url"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1566/002/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Office%20365/Email%20-%20SafeLinksTrigger.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Safe Links detections include low-confidence URL reputation hits. Filter on specific ThreatTypes for higher precision."
+    },
+    {
+        "mapping_id": "KQL-T1036-001",
+        "technique_id": "T1036",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Process Name Masquerading — OriginalFileName Mismatch",
+        "description": "Detects processes where the file name on disk does not match the OriginalFileName in the PE version information. Attackers rename malicious binaries to mimic legitimate system executables (e.g., renaming malware to svchost.exe) to evade name-based detections.",
+        "kql": (
+            "let SystemProcesses = dynamic([\"svchost.exe\", \"csrss.exe\", \"lsass.exe\", \"services.exe\", \"smss.exe\", \"winlogon.exe\", \"taskhost.exe\", \"spoolsv.exe\", \"RuntimeBroker.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName in~ (SystemProcesses)\n"
+            "| where isnotempty(ProcessVersionInfoOriginalFileName)\n"
+            "| where FileName !~ ProcessVersionInfoOriginalFileName\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessVersionInfoOriginalFileName, FolderPath, ProcessCommandLine, SHA256\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "masquerading", "process-name", "rename", "impersonation"],
+        "author": "Cyb3r-Monk (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1036/",
+            "https://github.com/Cyb3r-Monk/Threat-Hunting-and-Detection"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production"
+    },
+    {
+        "mapping_id": "KQL-T1055-001",
+        "technique_id": "T1055",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Suspicious Process Injection Indicators in Command Line",
+        "description": "Detects process execution patterns associated with process injection techniques, including CreateRemoteThread API calls, reflective DLL loading, and process hollowing indicators. Process injection is a core evasion technique used by implants and post-exploitation frameworks.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ProcessCommandLine has_any (\n"
+            "    \"VirtualAllocEx\", \"WriteProcessMemory\", \"CreateRemoteThread\",\n"
+            "    \"NtMapViewOfSection\", \"QueueUserAPC\", \"SetThreadContext\",\n"
+            "    \"ReflectiveLoader\", \"-inject\", \"hollowing\"\n"
+            ")\n"
+            "| where FileName !in~ (\"MsMpEng.exe\", \"svchost.exe\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, SHA256\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "privilege-escalation", "process-injection", "remote-thread"],
+        "author": "Cyb3r-Monk (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1055/",
+            "https://github.com/Cyb3r-Monk/Threat-Hunting-and-Detection"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "Application compatibility shims and some security products use injection APIs legitimately. Correlate with process reputation and file signing status."
+    },
+    {
+        "mapping_id": "KQL-T1082-002",
+        "technique_id": "T1082",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "hunting",
+        "severity": "informational",
+        "title": "System Information Discovery Tool Execution Survey",
+        "description": "Surveys execution of system information gathering tools (systeminfo, hostname, ver, wmic os) over the past 7 days. Establishes a baseline of legitimate vs. anomalous system discovery activity for identifying post-compromise reconnaissance.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(7d)\n"
+            "| where FileName in~ (\"systeminfo.exe\", \"hostname.exe\")\n"
+            "    or (FileName =~ \"wmic.exe\" and ProcessCommandLine has_any (\"os get\", \"computersystem\", \"cpu\", \"bios\"))\n"
+            "    or (FileName =~ \"cmd.exe\" and ProcessCommandLine has \"ver\")\n"
+            "| summarize ExecutionCount = count(), Devices = dcount(DeviceName), Users = make_set(AccountName, 10) by FileName, bin(Timestamp, 1d)\n"
+            "| sort by ExecutionCount desc"
+        ),
+        "tags": ["discovery", "system-info", "reconnaissance", "baseline", "hunting"],
+        "author": "Cyb3r-Monk (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1082/",
+            "https://github.com/Cyb3r-Monk/Threat-Hunting-and-Detection"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental"
+    },
+    {
+        "mapping_id": "KQL-T1083-002",
+        "technique_id": "T1083",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "hunting",
+        "severity": "informational",
+        "title": "File and Directory Enumeration Command Survey",
+        "description": "Hunts for directory listing and file search commands (dir, tree, Get-ChildItem with recurse) across the fleet over 7 days. Frequent recursive directory enumeration by non-admin accounts may indicate data staging or exfiltration preparation.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(7d)\n"
+            "| where (FileName =~ \"cmd.exe\" and ProcessCommandLine has_any (\"dir /s\", \"tree /f\", \"forfiles\"))\n"
+            "    or (FileName in~ (\"powershell.exe\", \"pwsh.exe\") and ProcessCommandLine has \"Get-ChildItem\" and ProcessCommandLine has \"Recurse\")\n"
+            "| summarize CommandCount = count(), Devices = dcount(DeviceName), Commands = make_set(ProcessCommandLine, 10) by AccountName, bin(Timestamp, 1d)\n"
+            "| where CommandCount >= 5\n"
+            "| sort by CommandCount desc"
+        ),
+        "tags": ["discovery", "file-discovery", "directory-listing", "data-staging", "hunting"],
+        "author": "Cyb3r-Monk (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1083/",
+            "https://github.com/Cyb3r-Monk/Threat-Hunting-and-Detection"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "Build processes and deployment scripts use recursive file operations. Exclude CI/CD service accounts and build agents."
+    },
+]
+
+# ─── Batch 3: Azure-Sentinel + reprise99 ──────────────────────────────────────
+
+BATCH_3 = [
+    {
+        "mapping_id": "KQL-T1136.003-001",
+        "technique_id": "T1136.003",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["AuditLogs"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Cloud Account Created — Guest or External User Invited",
+        "description": "Detects invitation or creation of external/guest user accounts in Entra ID. Adversaries with compromised admin access invite external accounts they control to maintain persistent access that bypasses internal account monitoring.",
+        "kql": (
+            "AuditLogs\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where OperationName in (\"Invite external user\", \"Add user\", \"Redeem external user invite\")\n"
+            "| extend TargetUPN = tostring(TargetResources[0].userPrincipalName)\n"
+            "| extend Initiator = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName))\n"
+            "| where TargetUPN has \"#EXT#\" or OperationName == \"Invite external user\"\n"
+            "| project TimeGenerated, Initiator, TargetUPN, OperationName, CorrelationId\n"
+            "| sort by TimeGenerated desc"
+        ),
+        "tags": ["persistence", "create-account", "cloud-account", "guest", "external-user"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1136/003/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Hunting%20Queries",
+            "https://learn.microsoft.com/en-us/entra/external-id/what-is-b2b"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "B2B collaboration with partners generates legitimate guest invitations. Cross-reference with approved external domains and exclude known partner domains."
+    },
+    {
+        "mapping_id": "KQL-T1078.002-002",
+        "technique_id": "T1078.002",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["SigninLogs"],
+        "query_type": "hunting",
+        "severity": "medium",
+        "title": "Domain Account Sign-in from Non-Corporate Network",
+        "description": "Hunts for successful domain account sign-ins originating from IP addresses outside known corporate network ranges over the past 7 days. Helps identify compromised domain credentials being used from attacker-controlled infrastructure.",
+        "kql": (
+            "let CorporateRanges = dynamic([\"10.0.0.0/8\", \"172.16.0.0/12\", \"192.168.0.0/16\"]);\n"
+            "SigninLogs\n"
+            "| where TimeGenerated > ago(7d)\n"
+            "| where ResultType == 0\n"
+            "| where isnotempty(IPAddress)\n"
+            "| where not(ipv4_is_in_any_range(IPAddress, CorporateRanges))\n"
+            "| where UserType == \"Member\"\n"
+            "| summarize SignInCount = count(), IPs = make_set(IPAddress, 10), Apps = make_set(AppDisplayName, 10), Locations = make_set(Location) by UserPrincipalName, bin(TimeGenerated, 1d)\n"
+            "| sort by SignInCount desc"
+        ),
+        "tags": ["initial-access", "valid-accounts", "domain-account", "external-login", "hunting"],
+        "author": "reprise99 (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1078/002/",
+            "https://github.com/reprise99/Sentinel-Queries"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "Replace CorporateRanges with your organization's actual public IP ranges (NAT/VPN egress). Remote workers will generate expected external sign-ins."
+    },
+    {
+        "mapping_id": "KQL-T1530-001",
+        "technique_id": "T1530",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft 365",
+        "log_sources": ["OfficeActivity"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Large Volume SharePoint or OneDrive File Downloads",
+        "description": "Detects a single user downloading an unusually high number of files from SharePoint or OneDrive within a short timeframe. Bulk file downloads indicate potential data exfiltration or mass collection from cloud storage.",
+        "kql": (
+            "OfficeActivity\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where Operation in (\"FileDownloaded\", \"FileSyncDownloadedFull\")\n"
+            "| where OfficeWorkload in (\"SharePoint\", \"OneDrive\")\n"
+            "| summarize DownloadCount = count(), Files = make_set(OfficeObjectId, 20) by UserId, ClientIP, bin(TimeGenerated, 1h)\n"
+            "| where DownloadCount >= 50\n"
+            "| sort by DownloadCount desc"
+        ),
+        "tags": ["collection", "exfiltration", "cloud-storage", "sharepoint", "onedrive"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1530/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Hunting%20Queries",
+            "https://learn.microsoft.com/en-us/purview/audit-log-activities"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "OneDrive sync clients generate high download volumes during initial setup. Exclude known sync client UserAgent strings and adjust DownloadCount threshold."
+    },
+    {
+        "mapping_id": "KQL-T1090-001",
+        "technique_id": "T1090",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["SigninLogs"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Sign-in Through Known Anonymous Proxy or TOR Network",
+        "description": "Detects successful Entra ID sign-ins from IP addresses flagged as anonymous proxies or TOR exit nodes by Microsoft threat intelligence. Attackers use anonymizing proxies to mask their origin when accessing compromised accounts.",
+        "kql": (
+            "SigninLogs\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where ResultType == 0\n"
+            "| where RiskEventTypes_V2 has \"anonymizedIPAddress\" or NetworkLocationDetails has \"anonymizer\"\n"
+            "| project TimeGenerated, UserPrincipalName, IPAddress, Location, AppDisplayName, RiskLevelDuringSignIn, RiskEventTypes_V2, ConditionalAccessStatus\n"
+            "| sort by TimeGenerated desc"
+        ),
+        "tags": ["command-and-control", "proxy", "tor", "anonymous", "azure-ad"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1090/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Detections",
+            "https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-sign-ins"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Requires Entra ID P2 for risk detection enrichment. VPN users in privacy-conscious regions may trigger false positives."
+    },
+    {
+        "mapping_id": "KQL-T1558.003-001",
+        "technique_id": "T1558.003",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Windows Security Events via AMA",
+        "log_sources": ["SecurityEvent"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Kerberoasting — Anomalous Kerberos Service Ticket Requests",
+        "description": "Detects Kerberos TGS requests (EventID 4769) using RC4 encryption targeting service accounts. Kerberoasting attacks request service tickets with weak encryption to crack service account passwords offline.",
+        "kql": (
+            "SecurityEvent\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where EventID == 4769\n"
+            "| where TicketEncryptionType == \"0x17\"\n"
+            "| where ServiceName !endswith \"$\"\n"
+            "| where ServiceName != \"krbtgt\"\n"
+            "| summarize RequestCount = count(), TargetServices = make_set(ServiceName, 20), IPs = make_set(IpAddress) by TargetUserName, bin(TimeGenerated, 1h)\n"
+            "| where RequestCount >= 5\n"
+            "| sort by RequestCount desc"
+        ),
+        "tags": ["credential-access", "kerberoasting", "kerberos", "active-directory", "service-ticket"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1558/003/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Detections",
+            "https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4769"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "TicketEncryptionType 0x17 = RC4_HMAC_MD5, which is the weak encryption targeted by Kerberoasting. Machine accounts (ending in $) and krbtgt are filtered. Adjust RequestCount threshold based on service account density."
+    },
+    {
+        "mapping_id": "KQL-T1543.003-001",
+        "technique_id": "T1543.003",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Windows Service Created via sc.exe or PowerShell",
+        "description": "Detects creation of new Windows services using sc.exe create or New-Service PowerShell cmdlet. Adversaries install malicious services for persistence that execute at SYSTEM privilege level on every boot.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where (FileName =~ \"sc.exe\" and ProcessCommandLine has \"create\" and ProcessCommandLine has \"binPath\")\n"
+            "    or (FileName in~ (\"powershell.exe\", \"pwsh.exe\") and ProcessCommandLine has \"New-Service\")\n"
+            "| where ProcessCommandLine !has_any (\"Microsoft\", \"Windows\", \"ProgramData\\\\Microsoft\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["persistence", "privilege-escalation", "windows-service", "sc-exe", "system-process"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1543/003/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Detections"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Software installers (MSI) create services legitimately. Exclude known installer paths and expand the Microsoft/Windows exclusion list based on your software baseline."
+    },
+    {
+        "mapping_id": "KQL-T1548.002-001",
+        "technique_id": "T1548.002",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "UAC Bypass via Trusted Binary Abuse",
+        "description": "Detects known UAC bypass techniques where attacker-modified registry keys redirect trusted auto-elevating binaries (fodhelper.exe, computerdefaults.exe, eventvwr.exe) to execute arbitrary commands with elevated privileges.",
+        "kql": (
+            "let UACBypassBinaries = dynamic([\"fodhelper.exe\", \"computerdefaults.exe\", \"eventvwr.exe\", \"sdclt.exe\", \"slui.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where InitiatingProcessFileName in~ (UACBypassBinaries)\n"
+            "| where FileName in~ (\"cmd.exe\", \"powershell.exe\", \"pwsh.exe\", \"mshta.exe\", \"rundll32.exe\", \"regsvr32.exe\")\n"
+            "| project Timestamp, DeviceName, AccountName, InitiatingProcessFileName, FileName, ProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["privilege-escalation", "defense-evasion", "uac-bypass", "elevation", "windows"],
+        "author": "Cyb3r-Monk (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1548/002/",
+            "https://github.com/Cyb3r-Monk/Threat-Hunting-and-Detection"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production"
+    },
+    {
+        "mapping_id": "KQL-T1112-001",
+        "technique_id": "T1112",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceRegistryEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Defense Evasion via Registry Modification of Security Settings",
+        "description": "Detects registry modifications that disable Windows security features including Windows Firewall, AMSI (Antimalware Scan Interface), Script Block Logging, and UAC. These changes weaken endpoint defenses and facilitate payload execution.",
+        "kql": (
+            "DeviceRegistryEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ActionType == \"RegistryValueSet\"\n"
+            "| where (\n"
+            "    (RegistryKey has \"EnableFirewall\" and RegistryValueData == \"0\")\n"
+            "    or (RegistryKey has \"DisableAntiSpyware\" and RegistryValueData == \"1\")\n"
+            "    or (RegistryKey has \"AmsiEnable\" and RegistryValueData == \"0\")\n"
+            "    or (RegistryKey has \"EnableScriptBlockLogging\" and RegistryValueData == \"0\")\n"
+            "    or (RegistryKey has \"EnableLUA\" and RegistryValueData == \"0\")\n"
+            "    or (RegistryKey has \"ConsentPromptBehaviorAdmin\" and RegistryValueData == \"0\")\n"
+            ")\n"
+            "| project Timestamp, DeviceName, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessFileName, InitiatingProcessAccountName\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "registry-modification", "firewall", "amsi", "uac"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1112/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Detections"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "GPO deployments may set these registry values. Correlate with change management — registry changes outside GPO refresh cycles warrant investigation."
+    },
+    {
+        "mapping_id": "KQL-T1078.004-001",
+        "technique_id": "T1078.004",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["SigninLogs"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Cloud Account Sign-in with New Authentication Application",
+        "description": "Detects successful sign-ins via application clients that have not been seen for a given user in the preceding 14 days. A new authentication application for an existing user may indicate token theft or AiTM phishing where the attacker uses a different client to access the compromised account.",
+        "kql": (
+            "let LookbackDays = 14d;\n"
+            "let KnownApps = SigninLogs\n"
+            "| where TimeGenerated between (ago(LookbackDays) .. ago(1d))\n"
+            "| where ResultType == 0\n"
+            "| distinct UserPrincipalName, AppDisplayName;\n"
+            "SigninLogs\n"
+            "| where TimeGenerated > ago(1d)\n"
+            "| where ResultType == 0\n"
+            "| join kind=leftanti KnownApps on UserPrincipalName, AppDisplayName\n"
+            "| project TimeGenerated, UserPrincipalName, AppDisplayName, IPAddress, Location, DeviceDetail, ConditionalAccessStatus\n"
+            "| sort by TimeGenerated desc"
+        ),
+        "tags": ["initial-access", "valid-accounts", "cloud-account", "new-app", "anomaly"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1078/004/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Azure%20Active%20Directory/NewAuthenticationAppDetected.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "New hires and application deployments will trigger for all users initially. Reduce noise by filtering out common enterprise apps (Teams, Outlook, SharePoint) and focusing on unusual clients."
+    },
+    {
+        "mapping_id": "KQL-T1078.004-002",
+        "technique_id": "T1078.004",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["SigninLogs"],
+        "query_type": "hunting",
+        "severity": "medium",
+        "title": "Cloud Account Sign-in Failures with Conditional Access Blocks",
+        "description": "Hunts for user accounts experiencing repeated Conditional Access policy failures over the past 7 days. Persistent CA failures from a single user may indicate credential compromise where the attacker's environment does not meet CA policy requirements.",
+        "kql": (
+            "SigninLogs\n"
+            "| where TimeGenerated > ago(7d)\n"
+            "| where ConditionalAccessStatus == \"failure\"\n"
+            "| summarize FailureCount = count(), IPs = make_set(IPAddress, 10), Apps = make_set(AppDisplayName, 10), Policies = make_set(ConditionalAccessPolicies) by UserPrincipalName, bin(TimeGenerated, 1d)\n"
+            "| where FailureCount >= 5\n"
+            "| sort by FailureCount desc"
+        ),
+        "tags": ["initial-access", "valid-accounts", "cloud-account", "conditional-access", "hunting"],
+        "author": "Bert-JanP (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1078/004/",
+            "https://github.com/Bert-JanP/Hunting-Queries-Detection-Rules/blob/main/Azure%20Active%20Directory/ConditionalAccess%20-%20UserFailures.md"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "Users with misconfigured devices will generate CA failures. Focus on accounts with CA failures from multiple IPs or with concurrent successful sign-ins from different locations."
+    },
+    {
+        "mapping_id": "KQL-T1204.002-001",
+        "technique_id": "T1204.002",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Suspicious Process Launched from Office Application",
+        "description": "Detects cmd.exe, powershell.exe, or other scripting engines spawned as child processes of Microsoft Office applications (Word, Excel, PowerPoint, Outlook). This pattern indicates macro execution or exploit delivery via a malicious document.",
+        "kql": (
+            "let OfficeApps = dynamic([\"winword.exe\", \"excel.exe\", \"powerpnt.exe\", \"outlook.exe\", \"msaccess.exe\", \"mspub.exe\"]);\n"
+            "let SuspiciousChildren = dynamic([\"cmd.exe\", \"powershell.exe\", \"pwsh.exe\", \"mshta.exe\", \"wscript.exe\", \"cscript.exe\", \"rundll32.exe\", \"regsvr32.exe\", \"certutil.exe\"]);\n"
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where InitiatingProcessFileName in~ (OfficeApps)\n"
+            "| where FileName in~ (SuspiciousChildren)\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["execution", "user-execution", "malicious-file", "office-macro", "initial-access"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1204/002/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Detections"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "production",
+        "tuning_notes": "Office add-ins and COM automation can spawn child processes. Exclude known legitimate add-in process names specific to your environment."
+    },
+    {
+        "mapping_id": "KQL-T1059.005-001",
+        "technique_id": "T1059.005",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "VBScript Execution via cscript or wscript",
+        "description": "Detects VBScript execution through cscript.exe or wscript.exe interpreters. VBScript remains a common malware delivery mechanism, especially in phishing campaigns using .vbs files or HTML Application (.hta) files that embed VBScript.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName in~ (\"cscript.exe\", \"wscript.exe\")\n"
+            "| where ProcessCommandLine has_any (\".vbs\", \".vbe\", \".wsf\")\n"
+            "| where FolderPath !startswith \"C:\\\\Program Files\"\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, FolderPath\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["execution", "vbscript", "scripting", "wscript", "cscript"],
+        "author": "reprise99 (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1059/005/",
+            "https://github.com/reprise99/Sentinel-Queries"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Login scripts and legacy enterprise applications may use VBScript. Exclude known script paths (NETLOGON share, management tool directories)."
+    },
+    {
+        "mapping_id": "KQL-T1059.007-001",
+        "technique_id": "T1059.007",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "JavaScript or JScript Execution Outside Browser Context",
+        "description": "Detects execution of JavaScript (.js) and JScript (.jse) files via wscript.exe or cscript.exe outside of a browser context. Malicious JS files delivered via email or USB are a common initial access vector, executing payloads directly via Windows Script Host.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName in~ (\"wscript.exe\", \"cscript.exe\")\n"
+            "| where ProcessCommandLine has_any (\".js\", \".jse\")\n"
+            "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, FolderPath\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["execution", "javascript", "jscript", "scripting", "wscript"],
+        "author": "reprise99 (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1059/007/",
+            "https://github.com/reprise99/Sentinel-Queries"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Some enterprise applications use Windows Script Host for automation. Exclude known automation paths and verify JS files running from Temp or Downloads directories."
+    },
+    {
+        "mapping_id": "KQL-T1564.001-001",
+        "technique_id": "T1564.001",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceProcessEvents"],
+        "query_type": "detection",
+        "severity": "low",
+        "title": "File or Directory Hidden via attrib Command",
+        "description": "Detects usage of attrib.exe to set the hidden (+h) or system (+s) attribute on files or directories. Adversaries hide malicious files and staging directories from users and basic file enumeration by applying hidden attributes.",
+        "kql": (
+            "DeviceProcessEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where FileName =~ \"attrib.exe\"\n"
+            "| where ProcessCommandLine has \"+h\" or ProcessCommandLine has \"+s\"\n"
+            "| where ProcessCommandLine !has \"C:\\\\Windows\\\\\"\n"
+            "| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n"
+            "| sort by Timestamp desc"
+        ),
+        "tags": ["defense-evasion", "hidden-files", "attrib", "stealth", "persistence"],
+        "author": "reprise99 (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1564/001/",
+            "https://github.com/reprise99/Sentinel-Queries"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "testing",
+        "tuning_notes": "Software installers sometimes set hidden attributes on configuration directories. Focus on attrib commands targeting user-writable locations (Desktop, Temp, AppData)."
+    },
+    {
+        "mapping_id": "KQL-T1071.004-001",
+        "technique_id": "T1071.004",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceNetworkEvents"],
+        "query_type": "detection",
+        "severity": "medium",
+        "title": "Potential DNS Tunneling — High Volume DNS Queries to Single Domain",
+        "description": "Detects a device making an unusually high number of DNS queries to a single domain within 1 hour. DNS tunneling encodes data in DNS queries and responses to exfiltrate data or establish covert C2 channels through typically unrestricted DNS traffic.",
+        "kql": (
+            "DeviceNetworkEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where RemotePort == 53\n"
+            "| where ActionType == \"ConnectionSuccess\"\n"
+            "| extend Domain = tostring(RemoteUrl)\n"
+            "| where isnotempty(Domain)\n"
+            "| summarize QueryCount = count(), UniqueSubdomains = dcount(Domain) by DeviceName, RemoteIP, bin(Timestamp, 1h)\n"
+            "| where QueryCount >= 500\n"
+            "| project Timestamp, DeviceName, RemoteIP, QueryCount, UniqueSubdomains\n"
+            "| sort by QueryCount desc"
+        ),
+        "tags": ["command-and-control", "dns-tunneling", "exfiltration", "dns", "covert-channel"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1071/004/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Detections"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "DNS-heavy applications (browser, CDN prefetch) generate high query volumes. Focus on non-browser processes and domains with unusually long subdomain labels (>30 chars)."
+    },
+    {
+        "mapping_id": "KQL-T1048-001",
+        "technique_id": "T1048",
+        "product": "Defender XDR",
+        "data_connector": "Microsoft Defender for Endpoint",
+        "log_sources": ["DeviceNetworkEvents"],
+        "query_type": "detection",
+        "severity": "high",
+        "title": "Large Outbound Data Transfer to Uncommon External IP",
+        "description": "Detects processes transferring more than 100MB of data to a single external IP within 1 hour. Large outbound transfers to non-CDN IPs may indicate data exfiltration via alternative protocols or direct file upload to attacker infrastructure.",
+        "kql": (
+            "DeviceNetworkEvents\n"
+            "| where Timestamp > ago(1d)\n"
+            "| where ActionType == \"ConnectionSuccess\"\n"
+            "| where RemoteIPType == \"Public\"\n"
+            "| where RemotePort !in (80, 443)\n"
+            "| summarize TotalBytesSent = sum(SentBytes), ConnectionCount = count() by DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName, bin(Timestamp, 1h)\n"
+            "| where TotalBytesSent > 104857600\n"
+            "| extend TotalMBSent = round(TotalBytesSent / 1048576.0, 2)\n"
+            "| project Timestamp, DeviceName, InitiatingProcessFileName, RemoteIP, RemotePort, TotalMBSent, ConnectionCount\n"
+            "| sort by TotalMBSent desc"
+        ),
+        "tags": ["exfiltration", "data-transfer", "alternative-protocol", "network", "large-upload"],
+        "author": "Microsoft (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1048/",
+            "https://github.com/Azure/Azure-Sentinel/tree/master/Hunting%20Queries"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "Backup to cloud, software updates, and video conferencing generate large outbound traffic. Exclude known backup destination IPs and common application ports."
+    },
+    {
+        "mapping_id": "KQL-T1190-002",
+        "technique_id": "T1190",
+        "product": "Microsoft Sentinel",
+        "data_connector": "Microsoft Entra ID",
+        "log_sources": ["SigninLogs"],
+        "query_type": "hunting",
+        "severity": "medium",
+        "title": "Sign-in Surge to Public-Facing Application from Diverse IPs",
+        "description": "Hunts for applications experiencing a sudden increase in sign-in attempts from many distinct IP addresses within a short window. This pattern may indicate exploitation of a public-facing authentication endpoint or credential stuffing attacks against published applications.",
+        "kql": (
+            "SigninLogs\n"
+            "| where TimeGenerated > ago(7d)\n"
+            "| where AppDisplayName != \"\"\n"
+            "| summarize AttemptCount = count(), UniqueIPs = dcount(IPAddress), FailCount = countif(ResultType != 0), SuccessCount = countif(ResultType == 0) by AppDisplayName, bin(TimeGenerated, 1h)\n"
+            "| where UniqueIPs >= 20 and AttemptCount >= 100\n"
+            "| project TimeGenerated, AppDisplayName, AttemptCount, UniqueIPs, FailCount, SuccessCount\n"
+            "| sort by AttemptCount desc"
+        ),
+        "tags": ["initial-access", "exploit-public-facing", "credential-stuffing", "authentication", "hunting"],
+        "author": "reprise99 (adapted)",
+        "references": [
+            "https://attack.mitre.org/techniques/T1190/",
+            "https://github.com/reprise99/Sentinel-Queries"
+        ],
+        "last_tested": "2025-03-01",
+        "version": 1,
+        "confidence": "experimental",
+        "tuning_notes": "Public-facing apps with large user bases will naturally have high IP diversity. Baseline normal sign-in patterns per application and alert on deviations exceeding 2-3 standard deviations."
+    },
+]
+
+
+def validate_and_write(all_mappings: list, technique_ids: set):
+    """Validate all mappings and write to file."""
+    errors = []
+
+    seen_ids = set()
+    technique_coverage = set()
+
+    for m in all_mappings:
+        mid = m["mapping_id"]
+
+        if mid in seen_ids:
+            errors.append(f"Duplicate mapping_id: {mid}")
+        seen_ids.add(mid)
+
+        tid = m["technique_id"]
+        if tid not in technique_ids:
+            errors.append(f"{mid}: technique_id {tid} not found in mitre_techniques.json")
+        technique_coverage.add(tid)
+
+        if m["product"] not in ("Microsoft Sentinel", "Defender XDR"):
+            errors.append(f"{mid}: invalid product '{m['product']}'")
+
+        if m["query_type"] not in ("detection", "hunting"):
+            errors.append(f"{mid}: invalid query_type '{m['query_type']}'")
+
+        if m["severity"] not in ("informational", "low", "medium", "high", "critical"):
+            errors.append(f"{mid}: invalid severity '{m['severity']}'")
+
+        if m["confidence"] not in ("experimental", "testing", "production"):
+            errors.append(f"{mid}: invalid confidence '{m['confidence']}'")
+
+        seq = mid.split("-")[-1]
+        is_odd = int(seq) % 2 == 1
+        if m["query_type"] == "detection" and not is_odd:
+            errors.append(f"{mid}: detection query should have odd sequence number")
+        if m["query_type"] == "hunting" and is_odd:
+            errors.append(f"{mid}: hunting query should have even sequence number")
+
+    if errors:
+        print("VALIDATION ERRORS:")
+        for e in errors:
+            print(f"  - {e}")
+        sys.exit(1)
+
+    with open(MAPPINGS_FILE, "w") as f:
+        json.dump(all_mappings, f, indent=2, ensure_ascii=False)
+
+    existing_count = len(load_existing_raw())
+    new_count = len(all_mappings) - existing_count
+
+    xdr_count = sum(1 for m in all_mappings if m["product"] == "Defender XDR")
+    sentinel_count = sum(1 for m in all_mappings if m["product"] == "Microsoft Sentinel")
+
+    print(f"Total queries: {len(all_mappings)}")
+    print(f"New queries added: {new_count}")
+    print(f"Unique techniques covered: {len(technique_coverage)}")
+    print(f"Defender XDR: {xdr_count} ({xdr_count*100//len(all_mappings)}%)")
+    print(f"Sentinel: {sentinel_count} ({sentinel_count*100//len(all_mappings)}%)")
+    print(f"All mapping_ids unique: {len(seen_ids) == len(all_mappings)}")
+    print("Validation PASSED")
+
+
+def load_existing_raw():
+    with open(MAPPINGS_FILE) as f:
+        return json.load(f)
+
+
+def main():
+    existing = load_existing()
+    technique_ids = load_technique_ids()
+
+    all_mappings = existing + BATCH_1 + BATCH_2 + BATCH_3
+    validate_and_write(all_mappings, technique_ids)
+
+
+if __name__ == "__main__":
+    main()
