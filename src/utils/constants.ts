@@ -46,13 +46,4 @@ export const CONFIDENCE_COLORS: Record<
   experimental: { bg: "bg-gray-500/20", text: "text-gray-400" },
 };
 
-/**
- * KQL mapping count → cell intensity (0 = gray, 1-2 = light, 3+ = strong).
- */
-export const MAPPING_INTENSITY = {
-  NONE: "bg-surface-overlay border-surface-elevated",
-  LIGHT: "bg-accent-low/10 border-accent-low/30",
-  STRONG: "bg-accent-low/20 border-accent-low/50",
-} as const;
-
 export const DEBOUNCE_MS = 300;

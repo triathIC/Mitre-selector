@@ -6,3 +6,5 @@ export { KqlCard, SEVERITY_ORDER } from "./KqlCard";
 export type { KqlCardProps } from "./KqlCard";
 export { KqlCodeBlock } from "./KqlCodeBlock";
 export type { KqlCodeBlockProps } from "./KqlCodeBlock";
+export { CollapsibleSection } from "./CollapsibleSection";
+export type { CollapsibleSectionProps } from "./CollapsibleSection";

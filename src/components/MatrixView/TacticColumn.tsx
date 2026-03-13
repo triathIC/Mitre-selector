@@ -24,7 +24,7 @@ export function TacticColumn({
   const getMappingCount = (id: string): number => (mappingsByTechnique.get(id) ?? []).length;
 
   return (
-    <div className="flex min-w-[180px] max-w-[220px] flex-col border-r border-white/10 last:border-r-0">
+    <div className="flex min-w-[200px] max-w-[240px] flex-col border-r border-white/10 last:border-r-0">
       <div className="sticky top-0 z-[1] border-b border-white/10 bg-surface-elevated px-2 py-2 text-center">
         <h2 className="text-xs font-semibold leading-tight text-gray-300">
           {tactic}

@@ -1,6 +1,5 @@
 import { memo, useCallback, useState } from "react";
 import type { MitreTechnique } from "@/types";
-import { MAPPING_INTENSITY } from "@/utils/constants";
 
 export interface TechniqueCellProps {
   technique: MitreTechnique;
@@ -43,16 +42,17 @@ function TechniqueCellComponent({
     [technique.id, onSelect]
   );
 
-  const intensityClass =
+  const borderClass =
     mappingCount === 0
-      ? MAPPING_INTENSITY.NONE
+      ? "border-l-transparent bg-gray-800/40"
       : mappingCount >= 3
-        ? MAPPING_INTENSITY.STRONG
-        : MAPPING_INTENSITY.LIGHT;
+        ? "border-l-cyan-400 bg-gray-800/80"
+        : "border-l-cyan-600 bg-gray-800/60";
 
+  const textClass = mappingCount === 0 ? "text-gray-500" : "text-gray-300";
   const dimmedClass = isDimmed ? "opacity-40" : "";
   const selectedClass = isSelected
-    ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-surface"
+    ? "ring-2 ring-cyan-400 !bg-cyan-950"
     : "";
 
   return (
@@ -62,7 +62,8 @@ function TechniqueCellComponent({
         tabIndex={0}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        className={`mb-1 flex cursor-pointer items-start gap-1 rounded border px-2 py-1.5 text-left text-xs transition ${intensityClass} ${dimmedClass} ${selectedClass} hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-surface`}
+        title={`${technique.id} ${technique.name}`}
+        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded border-l-[3px] border border-white/5 px-2 py-1.5 text-left text-xs transition ${borderClass} ${dimmedClass} ${selectedClass} hover:opacity-100 hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-400`}
         aria-label={`${technique.id} ${technique.name}${mappingCount > 0 ? `, ${mappingCount} KQL mapping(s)` : ""}`}
         aria-pressed={isSelected}
       >
@@ -83,12 +84,18 @@ function TechniqueCellComponent({
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <span className="font-mono font-medium text-gray-300">{technique.id}</span>
-          <span className="ml-1 truncate text-gray-500">{technique.name}</span>
-          {mappingCount > 0 && (
-            <span className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" aria-hidden />
-          )}
+          <div className={`font-mono text-[11px] font-medium ${isSelected ? "text-cyan-400" : "text-gray-400"}`}>
+            {technique.id}
+          </div>
+          <div className={`mt-0.5 line-clamp-2 leading-tight ${textClass}`}>
+            {technique.name}
+          </div>
         </div>
+        {mappingCount >= 3 && (
+          <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded bg-cyan-400/20 px-1 font-mono text-[10px] font-semibold text-cyan-300">
+            {mappingCount}
+          </span>
+        )}
       </div>
       {hasChildren && expanded && (
         <div className="ml-3 mt-0.5 border-l border-white/10 pl-2">

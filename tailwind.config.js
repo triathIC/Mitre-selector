@@ -4,6 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        sans: ["DM Sans", "system-ui", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "ui-monospace", "monospace"],
       },
       colors: {

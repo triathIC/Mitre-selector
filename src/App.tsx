@@ -65,7 +65,7 @@ function AppContent(): JSX.Element {
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-gray-200">
-      <Header />
+      <Header dataStore={dataStore} />
       <FilterBar />
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-auto">
@@ -77,7 +77,7 @@ function AppContent(): JSX.Element {
           <ErrorBoundary fallback={<div className="p-4 text-red-400">Detail panel error.</div>}>
             <Suspense
               fallback={
-                <div className="flex w-[480px] items-center justify-center bg-surface-elevated text-gray-500">
+                <div className="flex w-[576px] items-center justify-center border-l border-white/10 bg-surface-elevated text-gray-500">
                   Loading…
                 </div>
               }
