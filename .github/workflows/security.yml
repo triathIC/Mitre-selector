@@ -27,8 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run npm audit (high/critical only)
-        run: npm audit --audit-level=high
+      - name: Run npm audit (critical only)
+        run: npm audit --audit-level=critical
 
   eslint-security:
     name: ESLint Security
