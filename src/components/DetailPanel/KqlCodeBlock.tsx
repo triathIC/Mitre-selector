@@ -16,6 +16,8 @@ function tokenizeKql(kql: string): Array<{ type: string; text: string }> {
 
   function addMatch(regex: RegExp, type: string): void {
     let m: RegExpExecArray | null;
+    // Safe: regex.source and regex.flags come from static, hard-coded regex values in this module.
+    // eslint-disable-next-line security/detect-non-literal-regexp
     const re = new RegExp(regex.source, regex.flags);
     while ((m = re.exec(kql)) !== null) {
       sources.push({ start: m.index, end: m.index + m[0].length, type });
@@ -63,11 +65,11 @@ export interface KqlCodeBlockProps {
   maxHeight?: string;
 }
 
-export function KqlCodeBlock({ kql, maxHeight = "20rem" }: KqlCodeBlockProps): JSX.Element {
+export function KqlCodeBlock({ kql, maxHeight = "20rem" }: KqlCodeBlockProps) {
   const { copy, copied } = useCopyToClipboard();
 
   const handleCopy = useCallback(() => {
-    copy(kql);
+    void copy(kql);
   }, [copy, kql]);
 
   const tokens = tokenizeKql(kql);

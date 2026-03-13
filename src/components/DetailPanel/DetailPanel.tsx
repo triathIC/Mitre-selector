@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DataStore, KqlMapping } from "@/types";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context/useAppContext";
 import { TechniqueHeader } from "./TechniqueHeader";
-import { KqlCard, SEVERITY_ORDER } from "./KqlCard";
+import { KqlCard } from "./KqlCard";
 import { CollapsibleSection } from "./CollapsibleSection";
+import { SEVERITY_ORDER } from "./constants";
 
 export interface DetailPanelProps {
   dataStore: DataStore;
@@ -17,7 +18,7 @@ function sortMappingsBySeverity(mappings: KqlMapping[]): KqlMapping[] {
   });
 }
 
-export function DetailPanel({ dataStore }: DetailPanelProps): JSX.Element {
+export function DetailPanel({ dataStore }: DetailPanelProps) {
   const { state, selectTechnique } = useAppContext();
   const selectedId = state.selectedTechniqueId;
   const [activeTab, setActiveTab] = useState<"detection" | "hunting">("detection");
@@ -77,7 +78,9 @@ export function DetailPanel({ dataStore }: DetailPanelProps): JSX.Element {
   useEffect(() => {
     if (!selectedId) return;
     document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [selectedId, handleEscape]);
 
   if (!selectedId) return <></>;
@@ -121,7 +124,9 @@ export function DetailPanel({ dataStore }: DetailPanelProps): JSX.Element {
               <div className="mt-2 flex gap-1 rounded-lg bg-surface/60 p-0.5">
                 <button
                   type="button"
-                  onClick={() => setActiveTab("detection")}
+                  onClick={() => {
+                    setActiveTab("detection");
+                  }}
                   className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition ${
                     activeTab === "detection"
                       ? "bg-surface-overlay text-gray-100 shadow-sm"
@@ -132,7 +137,9 @@ export function DetailPanel({ dataStore }: DetailPanelProps): JSX.Element {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab("hunting")}
+                  onClick={() => {
+                    setActiveTab("hunting");
+                  }}
                   className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition ${
                     activeTab === "hunting"
                       ? "bg-surface-overlay text-gray-100 shadow-sm"
@@ -177,7 +184,7 @@ export function DetailPanel({ dataStore }: DetailPanelProps): JSX.Element {
           </CollapsibleSection>
 
           {subtechniqueIds.length > 0 && (
-            <CollapsibleSection title={`Sub-techniques (${subtechniqueIds.length})`}>
+            <CollapsibleSection title={`Sub-techniques (${String(subtechniqueIds.length)})`}>
               <ul className="space-y-1">
                 {subtechniqueIds.map((id) => {
                   const sub = dataStore.techniques.get(id);
@@ -186,7 +193,9 @@ export function DetailPanel({ dataStore }: DetailPanelProps): JSX.Element {
                     <li key={id}>
                       <button
                         type="button"
-                        onClick={() => selectTechnique(id)}
+                        onClick={() => {
+                          selectTechnique(id);
+                        }}
                         className="text-left text-sm text-cyan-400 hover:underline focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       >
                         <span className="font-mono text-gray-400">{sub.id}</span>
@@ -200,7 +209,7 @@ export function DetailPanel({ dataStore }: DetailPanelProps): JSX.Element {
           )}
 
           {technique.platforms.length > 0 && (
-            <CollapsibleSection title={`Platforms (${technique.platforms.length})`}>
+            <CollapsibleSection title={`Platforms (${String(technique.platforms.length)})`}>
               <div className="flex flex-wrap gap-1.5">
                 {technique.platforms.map((p) => (
                   <span

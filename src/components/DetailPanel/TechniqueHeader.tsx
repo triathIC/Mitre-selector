@@ -10,7 +10,7 @@ export interface TechniqueHeaderProps {
 
 const MAX_VISIBLE_TACTICS = 3;
 
-export function TechniqueHeader({ technique, onClose, closeButtonRef }: TechniqueHeaderProps): JSX.Element {
+export function TechniqueHeader({ technique, onClose, closeButtonRef }: TechniqueHeaderProps) {
   const [showAllTactics, setShowAllTactics] = useState(false);
   const visibleTactics = showAllTactics
     ? technique.tactics
@@ -50,7 +50,9 @@ export function TechniqueHeader({ technique, onClose, closeButtonRef }: Techniqu
         {!showAllTactics && overflowCount > 0 && (
           <button
             type="button"
-            onClick={() => setShowAllTactics(true)}
+            onClick={() => {
+              setShowAllTactics(true);
+            }}
             className="inline-flex items-center rounded border border-indigo-700/50 bg-indigo-900/50 px-2 py-0.5 text-xs font-medium text-indigo-400 hover:bg-indigo-900 hover:text-indigo-300"
           >
             +{overflowCount}

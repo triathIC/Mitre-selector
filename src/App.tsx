@@ -1,5 +1,6 @@
 import { Component, lazy, Suspense } from "react";
-import { AppProvider, useAppContext } from "@/context/AppContext";
+import { AppProvider } from "@/context/AppContext";
+import { useAppContext } from "@/context/useAppContext";
 import { useDataLoader } from "@/hooks/useDataLoader";
 import { Header, Footer } from "@/components/Layout";
 import { FilterBar } from "@/components/FilterBar";
@@ -38,7 +39,7 @@ class ErrorBoundary extends Component<
   }
 }
 
-function AppContent(): JSX.Element {
+function AppContent() {
   useDataLoader();
   const { state } = useAppContext();
 
@@ -61,7 +62,18 @@ function AppContent(): JSX.Element {
     );
   }
 
-  const dataStore = state.dataStore!;
+  if (!state.dataStore) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface p-4">
+        <div className="max-w-md text-center text-red-400">
+          <p className="font-medium">App state is invalid</p>
+          <p className="mt-2 text-sm">Data store is missing after load completed.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const dataStore = state.dataStore;
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-gray-200">
@@ -92,7 +104,7 @@ function AppContent(): JSX.Element {
   );
 }
 
-export default function App(): JSX.Element {
+export default function App() {
   return (
     <AppProvider>
       <AppContent />

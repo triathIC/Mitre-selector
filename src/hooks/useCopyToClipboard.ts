@@ -10,7 +10,9 @@ export function useCopyToClipboard(): {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
       return true;
     } catch {
       return false;

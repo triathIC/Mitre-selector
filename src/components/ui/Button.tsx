@@ -16,7 +16,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     ...props
   },
   ref
-): JSX.Element {
+) {
   const base = "inline-flex items-center justify-center rounded font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface focus:ring-blue-500 disabled:opacity-50";
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700",
@@ -31,6 +31,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type="button"
+      // Safe: `variant` and `size` are strict union props that can only map to known keys.
+      // eslint-disable-next-line security/detect-object-injection
       className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >

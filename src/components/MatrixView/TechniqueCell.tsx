@@ -23,7 +23,7 @@ function TechniqueCellComponent({
   getTechnique,
   getMappingCount,
   techniqueMatchesFilter,
-}: TechniqueCellProps): JSX.Element {
+}: TechniqueCellProps) {
   const isSelected = selectedTechniqueId === technique.id;
   const [expanded, setExpanded] = useState(false);
   const hasChildren = childIds.length > 0;
@@ -64,7 +64,7 @@ function TechniqueCellComponent({
         onKeyDown={handleKeyDown}
         title={`${technique.id} ${technique.name}`}
         className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded border-l-[3px] border border-white/5 px-2 py-1.5 text-left text-xs transition ${borderClass} ${dimmedClass} ${selectedClass} hover:opacity-100 hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-400`}
-        aria-label={`${technique.id} ${technique.name}${mappingCount > 0 ? `, ${mappingCount} KQL mapping(s)` : ""}`}
+        aria-label={`${technique.id} ${technique.name}${mappingCount > 0 ? `, ${String(mappingCount)} KQL mapping(s)` : ""}`}
         aria-pressed={isSelected}
       >
         {hasChildren && (

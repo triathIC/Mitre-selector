@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { DataStore, MitreTechnique, MitreTactic } from "@/types";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context/useAppContext";
 
 export interface FilteredResult {
   /** Techniques per tactic (only top-level; sub-techniques attached to parent) */
@@ -90,5 +90,5 @@ export function useFilteredData(dataStore: DataStore | null): FilteredResult {
       techniquesByTactic,
       techniqueMatchesFilter,
     };
-  }, [dataStore, filters.platform, filters.product, filters.severity, filters.searchQuery, filters.showOnlyWithKql, searchLower]);
+  }, [dataStore, filters.platform, filters.product, filters.severity, filters.showOnlyWithKql, searchLower]);
 }

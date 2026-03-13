@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataStore, MitreTactic } from "@/types";
 import { useFilteredData } from "@/hooks/useFilteredData";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context/useAppContext";
 import { TacticColumn } from "./TacticColumn";
 
 export interface MatrixViewProps {
   dataStore: DataStore;
 }
 
-export function MatrixView({ dataStore }: MatrixViewProps): JSX.Element {
+export function MatrixView({ dataStore }: MatrixViewProps) {
   const { techniquesByTactic, techniqueMatchesFilter } = useFilteredData(dataStore);
   const { state, selectTechnique } = useAppContext();
   const selectedTechniqueId = state.selectedTechniqueId;
@@ -65,7 +65,9 @@ export function MatrixView({ dataStore }: MatrixViewProps): JSX.Element {
         <select
           id="mobile-tactic"
           value={effectiveTactic}
-          onChange={(e) => setMobileTactic(e.target.value as MitreTactic)}
+          onChange={(e) => {
+            setMobileTactic(e.target.value as MitreTactic);
+          }}
           className="mb-2 w-full rounded border border-white/10 bg-surface-overlay px-3 py-2 text-sm text-gray-200 focus:border-cyan-500 focus:outline-none"
           aria-label="Select tactic"
         >

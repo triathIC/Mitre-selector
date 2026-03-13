@@ -7,14 +7,6 @@ export interface KqlCardProps {
   mapping: KqlMapping;
 }
 
-export const SEVERITY_ORDER: KqlMapping["severity"][] = [
-  "critical",
-  "high",
-  "medium",
-  "low",
-  "informational",
-];
-
 function extractHostname(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -23,7 +15,7 @@ function extractHostname(url: string): string {
   }
 }
 
-export function KqlCard({ mapping }: KqlCardProps): JSX.Element {
+export function KqlCard({ mapping }: KqlCardProps) {
   const sevStyle = SEVERITY_COLORS[mapping.severity];
   const confStyle = CONFIDENCE_COLORS[mapping.confidence];
 

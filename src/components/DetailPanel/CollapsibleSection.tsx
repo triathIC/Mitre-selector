@@ -10,14 +10,16 @@ export function CollapsibleSection({
   title,
   children,
   defaultOpen = false,
-}: CollapsibleSectionProps): JSX.Element {
+}: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
         className="flex w-full items-center gap-2 rounded px-1 py-1.5 text-left text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500"
         aria-expanded={open}
       >

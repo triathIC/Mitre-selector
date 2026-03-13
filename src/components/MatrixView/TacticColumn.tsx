@@ -17,7 +17,7 @@ export function TacticColumn({
   selectedTechniqueId,
   techniqueMatchesFilter,
   onSelectTechnique,
-}: TacticColumnProps): JSX.Element {
+}: TacticColumnProps) {
   const { techniques: techniqueMap, mappingsByTechnique, subtechniquesByParent } = dataStore;
 
   const getTechnique = (id: string): MitreTechnique | undefined => techniqueMap.get(id);

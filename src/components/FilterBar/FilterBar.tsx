@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { KqlMapping, Platform } from "@/types";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context/useAppContext";
 import { Button } from "@/components/ui";
 import { DEBOUNCE_MS } from "@/utils/constants";
 
@@ -33,7 +33,7 @@ const SEVERITIES: Array<KqlMapping["severity"] | "all"> = [
   "informational",
 ];
 
-export function FilterBar(): JSX.Element {
+export function FilterBar() {
   const { state, setFilter, resetFilters, hasActiveFilters } = useAppContext();
   const [localSearch, setLocalSearch] = useState(state.filters.searchQuery);
 
@@ -45,7 +45,9 @@ export function FilterBar(): JSX.Element {
     const t = setTimeout(() => {
       setFilter({ searchQuery: localSearch });
     }, DEBOUNCE_MS);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+    };
   }, [localSearch, setFilter]);
 
   const handlePlatformChange = useCallback(
@@ -136,7 +138,9 @@ export function FilterBar(): JSX.Element {
         id="filter-search"
         type="search"
         value={localSearch}
-        onChange={(e) => setLocalSearch(e.target.value)}
+        onChange={(e) => {
+          setLocalSearch(e.target.value);
+        }}
         placeholder="Search…"
         className="min-w-[160px] rounded border border-white/10 bg-surface-overlay px-2 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         aria-label="Search techniques and KQL mappings"

@@ -4,7 +4,7 @@ export interface HeaderProps {
   dataStore?: DataStore | null;
 }
 
-export function Header({ dataStore }: HeaderProps): JSX.Element {
+export function Header({ dataStore }: HeaderProps) {
   let statsText = "";
   if (dataStore) {
     const techniqueCount = dataStore.techniques.size;
@@ -14,7 +14,7 @@ export function Header({ dataStore }: HeaderProps): JSX.Element {
       totalMappings += mappings.length;
       if (mappings.length > 0) techniquesWithDetections++;
     }
-    statsText = `${techniqueCount} techniques · ${totalMappings} KQL queries · ${techniquesWithDetections} with detections`;
+    statsText = `${String(techniqueCount)} techniques · ${String(totalMappings)} KQL queries · ${String(techniquesWithDetections)} with detections`;
   }
 
   return (

@@ -1,12 +1,11 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useMemo,
   useReducer,
   type ReactNode,
 } from "react";
 import type { AppAction, AppState, FilterState } from "@/types";
+import { AppContext, type AppContextValue } from "@/context/context";
 
 const initialFilters: FilterState = {
   platform: "all",
@@ -54,18 +53,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-type AppContextValue = {
-  state: AppState;
-  dispatch: React.Dispatch<AppAction>;
-  selectTechnique: (id: string | null) => void;
-  setFilter: (payload: Partial<FilterState>) => void;
-  resetFilters: () => void;
-  hasActiveFilters: boolean;
-};
-
-const AppContext = createContext<AppContextValue | null>(null);
-
-export function AppProvider({ children }: { children: ReactNode }): JSX.Element {
+export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   const selectTechnique = useCallback((id: string | null) => {
@@ -104,12 +92,4 @@ export function AppProvider({ children }: { children: ReactNode }): JSX.Element 
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
-}
-
-export function useAppContext(): AppContextValue {
-  const ctx = useContext(AppContext);
-  if (ctx === null) {
-    throw new Error("useAppContext must be used within AppProvider");
-  }
-  return ctx;
 }

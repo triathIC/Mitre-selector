@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { KqlMapping, MitreTechnique } from "@/types";
 import { buildDataStore } from "@/utils/dataTransform";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context/useAppContext";
 
 const BASE = import.meta.env.BASE_URL;
 const MITRE_JSON = `${BASE}data/mitre_techniques.json`;
@@ -25,21 +25,18 @@ export function useDataLoader(): void {
         ]);
 
         if (!mitreRes.ok) {
-          throw new Error(`Failed to load MITRE data: ${mitreRes.status}`);
+          throw new Error(`Failed to load MITRE data: ${String(mitreRes.status)}`);
         }
         if (!kqlRes.ok) {
-          throw new Error(`Failed to load KQL mappings: ${kqlRes.status}`);
+          throw new Error(`Failed to load KQL mappings: ${String(kqlRes.status)}`);
         }
 
-        const [mitreJson, kqlJson] = await Promise.all([
-          mitreRes.json(),
-          kqlRes.json(),
+        const [techniques, mappings]: [MitreTechnique[], KqlMapping[]] = await Promise.all([
+          mitreRes.json() as Promise<MitreTechnique[]>,
+          kqlRes.json() as Promise<KqlMapping[]>,
         ]);
 
         if (cancelled) return;
-
-        const techniques = mitreJson as MitreTechnique[];
-        const mappings = kqlJson as KqlMapping[];
 
         if (!Array.isArray(techniques) || !Array.isArray(mappings)) {
           throw new Error("Invalid data shape: expected arrays");
@@ -54,7 +51,7 @@ export function useDataLoader(): void {
       }
     }
 
-    load();
+    void load();
     return () => {
       cancelled = true;
     };

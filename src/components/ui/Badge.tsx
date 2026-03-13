@@ -6,7 +6,7 @@ export interface BadgeProps {
   "aria-label"?: string;
 }
 
-export function Badge({ children, className = "", "aria-label": ariaLabel }: BadgeProps): JSX.Element {
+export function Badge({ children, className = "", "aria-label": ariaLabel }: BadgeProps) {
   return (
     <span
       className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${className}`}
