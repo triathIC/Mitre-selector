@@ -1,4 +1,6 @@
 import { memo, useCallback, useState } from "react";
+import type { CSSProperties } from "react";
+import { useTiltEffect } from "@/hooks/useTiltEffect";
 import type { MitreTechnique } from "@/types";
 
 export interface TechniqueCellProps {
@@ -44,16 +46,24 @@ function TechniqueCellComponent({
 
   const borderClass =
     mappingCount === 0
-      ? "border-l-transparent bg-gray-800/40"
+      ? "border-l-transparent"
       : mappingCount >= 3
-        ? "border-l-cyan-400 bg-gray-800/80"
-        : "border-l-cyan-600 bg-gray-800/60";
+        ? "border-l-cyan-400"
+        : "border-l-cyan-600";
 
   const textClass = mappingCount === 0 ? "text-gray-500" : "text-gray-300";
   const dimmedClass = isDimmed ? "opacity-40" : "";
   const selectedClass = isSelected
     ? "ring-2 ring-cyan-400 !bg-cyan-950"
     : "";
+  const cellBg =
+    isSelected
+      ? "rgb(8 47 73)"
+      : mappingCount === 0
+        ? "rgb(31 41 55 / 0.4)"
+        : mappingCount >= 3
+          ? "rgb(31 41 55 / 0.8)"
+          : "rgb(31 41 55 / 0.6)";
   const hoverClass = isSelected
     ? ""
     : mappingCount === 0
@@ -61,17 +71,25 @@ function TechniqueCellComponent({
       : mappingCount >= 3
         ? "hover:bg-gray-700/90 hover:border-l-cyan-300 hover:shadow-md hover:shadow-cyan-800/40"
         : "hover:bg-gray-700/70 hover:border-l-cyan-400 hover:shadow-md hover:shadow-cyan-900/30";
-  const scaleClass = isSelected ? "hover:scale-100" : "hover:scale-105 hover:z-10";
+  const scaleClass = isSelected ? "hover:scale-100" : "hover:z-10";
+  const { ref, handleMouseMove, handleMouseLeave } = useTiltEffect(9);
+  const cellStyle = {
+    "--cell-bg": cellBg,
+  } as CSSProperties;
 
   return (
     <div className="contain-layout contain-paint">
       <div
+        ref={ref}
         role="button"
         tabIndex={0}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
+        onMouseMove={isSelected ? undefined : handleMouseMove}
+        onMouseLeave={isSelected ? undefined : handleMouseLeave}
         title={`${technique.id} ${technique.name}`}
-        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded border border-white/5 border-l-[3px] px-2 py-1.5 text-left text-xs transition-transform duration-150 ease-out ${borderClass} ${dimmedClass} ${selectedClass} ${hoverClass} ${scaleClass} focus:outline-none focus:ring-2 focus:ring-cyan-400`}
+        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded-md border border-white/5 border-b-gray-900/50 border-l-[3px] border-t-gray-600/30 bg-[var(--cell-bg)] px-2 py-1.5 text-left text-xs shadow-sm shadow-black/20 transition-transform duration-150 ease-out will-change-transform [transform-style:preserve-3d] ${borderClass} ${dimmedClass} ${selectedClass} ${hoverClass} ${scaleClass} focus:outline-none focus:ring-2 focus:ring-cyan-400`}
+        style={cellStyle}
         aria-label={`${technique.id} ${technique.name}${mappingCount > 0 ? `, ${String(mappingCount)} KQL mapping(s)` : ""}`}
         aria-pressed={isSelected}
       >
