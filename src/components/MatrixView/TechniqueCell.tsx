@@ -61,6 +61,7 @@ function TechniqueCellComponent({
       : mappingCount >= 3
         ? "hover:bg-gray-700/90 hover:border-l-cyan-300 hover:shadow-md hover:shadow-cyan-800/40"
         : "hover:bg-gray-700/70 hover:border-l-cyan-400 hover:shadow-md hover:shadow-cyan-900/30";
+  const scaleClass = isSelected ? "hover:scale-100" : "hover:scale-105 hover:z-10";
 
   return (
     <div className="contain-layout contain-paint">
@@ -70,7 +71,7 @@ function TechniqueCellComponent({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         title={`${technique.id} ${technique.name}`}
-        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded border border-white/5 border-l-[3px] px-2 py-1.5 text-left text-xs transition-all duration-150 ease-out ${borderClass} ${dimmedClass} ${selectedClass} ${hoverClass} focus:outline-none focus:ring-2 focus:ring-cyan-400`}
+        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded border border-white/5 border-l-[3px] px-2 py-1.5 text-left text-xs transition-transform duration-150 ease-out ${borderClass} ${dimmedClass} ${selectedClass} ${hoverClass} ${scaleClass} focus:outline-none focus:ring-2 focus:ring-cyan-400`}
         aria-label={`${technique.id} ${technique.name}${mappingCount > 0 ? `, ${String(mappingCount)} KQL mapping(s)` : ""}`}
         aria-pressed={isSelected}
       >
