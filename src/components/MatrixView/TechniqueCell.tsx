@@ -54,6 +54,13 @@ function TechniqueCellComponent({
   const selectedClass = isSelected
     ? "ring-2 ring-cyan-400 !bg-cyan-950"
     : "";
+  const hoverClass = isSelected
+    ? ""
+    : mappingCount === 0
+      ? "hover:bg-gray-700/50 hover:text-gray-400 hover:shadow-sm hover:shadow-gray-700/50"
+      : mappingCount >= 3
+        ? "hover:bg-gray-700/90 hover:border-l-cyan-300 hover:shadow-md hover:shadow-cyan-800/40"
+        : "hover:bg-gray-700/70 hover:border-l-cyan-400 hover:shadow-md hover:shadow-cyan-900/30";
 
   return (
     <div className="contain-layout contain-paint">
@@ -63,7 +70,7 @@ function TechniqueCellComponent({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         title={`${technique.id} ${technique.name}`}
-        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded border-l-[3px] border border-white/5 px-2 py-1.5 text-left text-xs transition ${borderClass} ${dimmedClass} ${selectedClass} hover:opacity-100 hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-400`}
+        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded border border-white/5 border-l-[3px] px-2 py-1.5 text-left text-xs transition-all duration-150 ease-out ${borderClass} ${dimmedClass} ${selectedClass} ${hoverClass} focus:outline-none focus:ring-2 focus:ring-cyan-400`}
         aria-label={`${technique.id} ${technique.name}${mappingCount > 0 ? `, ${String(mappingCount)} KQL mapping(s)` : ""}`}
         aria-pressed={isSelected}
       >
