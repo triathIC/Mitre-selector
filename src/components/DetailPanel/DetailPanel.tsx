@@ -5,6 +5,7 @@ import { TechniqueHeader } from "./TechniqueHeader";
 import { KqlCard } from "./KqlCard";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { SEVERITY_ORDER } from "./constants";
+import { buildContributionUrl } from "@/utils/github";
 
 export interface DetailPanelProps {
   dataStore: DataStore;
@@ -93,6 +94,8 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
     );
   }
 
+  const contributionUrl = buildContributionUrl(technique.id, technique.name);
+
   return (
     <aside
       className="flex h-full w-full flex-col overflow-y-auto border-l border-white/10 bg-surface-elevated md:w-[576px] md:min-w-[576px]"
@@ -156,23 +159,37 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
                     No {activeTab} queries for this technique.
                   </p>
                 ) : (
-                  activeMappings.map((m) => (
-                    <KqlCard key={m.mapping_id} mapping={m} />
-                  ))
+                  <>
+                    {activeMappings.map((m) => (
+                      <KqlCard key={m.mapping_id} mapping={m} />
+                    ))}
+                    <a
+                      href={contributionUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-500 hover:text-cyan-400 text-sm mt-4"
+                    >
+                      + Add another query for this technique →
+                    </a>
+                  </>
                 )}
               </div>
             </>
           ) : (
-            <div className="mt-3 rounded-lg border border-dashed border-white/10 bg-surface-overlay/50 p-4 text-center text-sm text-gray-500">
-              <p>No detections yet — contribute one!</p>
-              <a
-                href="https://github.com/your-org/mitre-kql-explorer/blob/main/CONTRIBUTING.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-cyan-400 hover:underline"
-              >
-                CONTRIBUTING.md
-              </a>
+            <div className="bg-gray-800/30 border border-dashed border-gray-600 rounded-lg p-8 text-center">
+              <p className="text-gray-400">No detections for this technique yet.</p>
+              <p className="mt-4 text-gray-400">Know a KQL query for {technique.id}?</p>
+              <p className="text-gray-400">Help the community by contributing one.</p>
+              <div className="mt-6">
+                <a
+                  href={contributionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-2 rounded-md inline-flex items-center gap-2"
+                >
+                  + Contribute a KQL query →
+                </a>
+              </div>
             </div>
           )}
         </div>

@@ -1,32 +1,16 @@
-name: New KQL mapping
-description: Propose a new or updated KQL detection/hunting mapping
-title: "[KQL] "
-labels: ["kql-mapping"]
+name: KQL Query Contribution
+description: Contribute a KQL detection or hunting query mapped to a MITRE ATT&CK technique
+title: "KQL Contribution: "
+labels: ["contribution"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Use this template to propose a new KQL mapping or a change to an existing one.
-        See [CONTRIBUTING.md](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) for the full schema.
-
   - type: input
     id: technique_id
     attributes:
-      label: Technique ID
-      description: MITRE technique or sub-technique (e.g. T1059, T1059.001)
+      label: MITRE ATT&CK Technique ID
+      description: "e.g. T1059.001"
       placeholder: "T1059.001"
     validations:
       required: true
-
-  - type: input
-    id: title
-    attributes:
-      label: Title
-      description: Short descriptive title for the mapping
-      placeholder: "Suspicious PowerShell with Encoded Command"
-    validations:
-      required: true
-
   - type: dropdown
     id: product
     attributes:
@@ -36,15 +20,31 @@ body:
         - Defender XDR
     validations:
       required: true
-
+  - type: input
+    id: data_connector
+    attributes:
+      label: Data Connector
+      description: "e.g. Microsoft Defender for Endpoint, Microsoft Entra ID"
+      placeholder: "Microsoft Defender for Endpoint"
+    validations:
+      required: true
+  - type: input
+    id: log_sources
+    attributes:
+      label: Log Sources
+      description: "Comma-separated table names, e.g. DeviceProcessEvents, SigninLogs"
+      placeholder: "DeviceProcessEvents"
+    validations:
+      required: true
   - type: dropdown
     id: query_type
     attributes:
-      label: Query type
+      label: Query Type
       options:
         - detection
         - hunting
-
+    validations:
+      required: true
   - type: dropdown
     id: severity
     attributes:
@@ -55,52 +55,51 @@ body:
         - medium
         - low
         - informational
-
+    validations:
+      required: true
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Confidence Level
+      options:
+        - production
+        - testing
+        - experimental
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Query Title
+      description: "Short descriptive title"
+      placeholder: "Suspicious PowerShell Execution with Encoded Command"
+    validations:
+      required: true
   - type: textarea
     id: description
     attributes:
       label: Description
-      description: What the query detects and why it matters
-      placeholder: "Detects PowerShell processes launched with -EncodedCommand..."
+      description: "What does this query detect and why is it relevant? 2-3 sentences."
     validations:
       required: true
-
   - type: textarea
     id: kql
     attributes:
-      label: KQL query
-      description: Full KQL (valid, tested). No placeholders.
+      label: KQL Query
+      description: "Paste the full KQL query. Must be syntactically valid."
       render: shell
     validations:
       required: true
-
-  - type: input
-    id: author
-    attributes:
-      label: Author
-      placeholder: "your-github-handle"
-    validations:
-      required: true
-
-  - type: input
-    id: last_tested
-    attributes:
-      label: Last tested (ISO date)
-      placeholder: "2025-03-01"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: confidence
-    attributes:
-      label: Confidence
-      options:
-        - experimental
-        - testing
-        - production
-
   - type: textarea
-    id: notes
+    id: tuning_notes
     attributes:
-      label: Additional notes
-      description: Data connector, log sources, tuning notes, references
+      label: Tuning Notes (optional)
+      description: "Known false positives, recommended exclusions, environment-specific adjustments"
+  - type: input
+    id: references
+    attributes:
+      label: References
+      description: "Comma-separated URLs (MITRE, Microsoft Docs, blog posts)"
+      placeholder: "https://attack.mitre.org/techniques/T1059/001/"
+    validations:
+      required: true
