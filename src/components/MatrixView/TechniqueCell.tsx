@@ -1,6 +1,5 @@
 import { memo, useCallback, useState } from "react";
 import type { CSSProperties } from "react";
-import { useTiltEffect } from "@/hooks/useTiltEffect";
 import type { MitreTechnique } from "@/types";
 
 export interface TechniqueCellProps {
@@ -72,23 +71,23 @@ function TechniqueCellComponent({
         ? "hover:bg-gray-700/90 hover:border-l-cyan-300 hover:shadow-md hover:shadow-cyan-800/40"
         : "hover:bg-gray-700/70 hover:border-l-cyan-400 hover:shadow-md hover:shadow-cyan-900/30";
   const scaleClass = isSelected ? "hover:scale-100" : "hover:z-10";
-  const { ref, handleMouseMove, handleMouseLeave } = useTiltEffect(9);
   const cellStyle = {
     "--cell-bg": cellBg,
+    transition: "transform 100ms ease-out",
+    willChange: "transform",
+    background: "var(--glare, none), var(--cell-bg)",
   } as CSSProperties;
 
   return (
     <div className="contain-layout contain-paint">
       <div
-        ref={ref}
+        {...(!isSelected ? { "data-tilt-cell": "" } : {})}
         role="button"
         tabIndex={0}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        onMouseMove={isSelected ? undefined : handleMouseMove}
-        onMouseLeave={isSelected ? undefined : handleMouseLeave}
         title={`${technique.id} ${technique.name}`}
-        className={`relative mb-1 flex cursor-pointer items-start gap-1 rounded-md border border-white/5 border-b-gray-900/50 border-l-[3px] border-t-gray-600/30 bg-[var(--cell-bg)] px-2 py-1.5 text-left text-xs shadow-sm shadow-black/20 transition-transform duration-150 ease-out will-change-transform [transform-style:preserve-3d] ${borderClass} ${dimmedClass} ${selectedClass} ${hoverClass} ${scaleClass} focus:outline-none focus:ring-2 focus:ring-cyan-400`}
+        className={`relative flex cursor-pointer items-start gap-1 rounded-sm border-t border-t-white/5 border-b border-b-black/20 border-l-[3px] px-2 py-1.5 text-left text-xs shadow-sm shadow-black/30 transition-transform duration-150 ease-out will-change-transform [transform-style:preserve-3d] ${borderClass} ${dimmedClass} ${selectedClass} ${hoverClass} ${scaleClass} focus:outline-none focus:ring-2 focus:ring-cyan-400`}
         style={cellStyle}
         aria-label={`${technique.id} ${technique.name}${mappingCount > 0 ? `, ${String(mappingCount)} KQL mapping(s)` : ""}`}
         aria-pressed={isSelected}

@@ -30,7 +30,7 @@ export function TacticColumn({
           {tactic}
         </h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex flex-1 flex-col gap-[2px] overflow-y-auto p-2">
         {techniques.map((technique) => (
           <TechniqueCell
             key={technique.id}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataStore, MitreTactic } from "@/types";
 import { useFilteredData } from "@/hooks/useFilteredData";
 import { useAppContext } from "@/context/useAppContext";
+import { useMatrixTilt } from "@/hooks/useMatrixTilt";
 import { TacticColumn } from "./TacticColumn";
 
 export interface MatrixViewProps {
@@ -16,8 +17,13 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
     dataStore.tactics[0] ?? ""
   );
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [showRightFade, setShowRightFade] = useState(false);
+  const {
+    handleMouseMove: handleTiltMouseMove,
+    handleMouseLeave: handleTiltMouseLeave,
+    updateCellPositions,
+  } = useMatrixTilt({ containerRef: scrollRef });
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -39,6 +45,15 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
       observer.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      updateCellPositions();
+    });
+    return () => {
+      cancelAnimationFrame(id);
+    };
+  }, [techniquesByTactic, updateCellPositions]);
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -93,9 +108,12 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
       <div className="relative hidden md:block">
         <div
           ref={scrollRef}
+          data-matrix-scroll
           className="flex overflow-x-auto overflow-y-hidden"
           role="grid"
           aria-label="MITRE ATT&CK matrix"
+          onMouseMove={handleTiltMouseMove}
+          onMouseLeave={handleTiltMouseLeave}
         >
           {tactics.map((tactic) => {
             const techniques = techniquesByTactic.get(tactic) ?? [];
