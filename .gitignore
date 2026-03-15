@@ -9,3 +9,6 @@ dist-node/
 .env.local
 .env.production
 .env*.local
+
+# Obsidian PKM — nicht mit Repo syncen
+docs/PROJECT-DOCUMENTATION.md
