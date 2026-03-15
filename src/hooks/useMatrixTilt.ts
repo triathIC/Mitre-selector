@@ -2,10 +2,10 @@ import type React from "react";
 import { useCallback, useRef, useEffect } from "react";
 
 export const TILT_DEFAULTS = {
-  maxTilt: 8, // Grad — höher = dramatischer
-  radius: 200, // Pixel — größer = mehr Zellen reagieren
+  maxTilt: 10, // Grad — höher = dramatischer
+  radius: 400, // Pixel — größer = mehr Zellen reagieren
   glareIntensity: 0.07, // 0-1 — höher = stärkerer Glanz
-  scaleMax: 1.04, // Maximale Vergrößerung der Zelle unter Cursor
+  scaleMax: 1.08, // Maximale Vergrößerung der Zelle unter Cursor
   resetDuration: 400, // ms — Dauer der Rückkehr-Animation
 } as const;
 
