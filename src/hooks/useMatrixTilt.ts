@@ -9,12 +9,6 @@ export const TILT_DEFAULTS = {
   resetDuration: 400, // ms — Dauer der Rückkehr-Animation
 } as const;
 
-interface CellPosition {
-  element: HTMLElement;
-  centerX: number;
-  centerY: number;
-}
-
 export function useMatrixTilt(options: {
   containerRef?: React.RefObject<HTMLDivElement | null>;
   maxTilt?: number;
@@ -25,7 +19,6 @@ export function useMatrixTilt(options: {
 } = {}) {
   const internalRef = useRef<HTMLDivElement>(null);
   const containerRef = options.containerRef ?? internalRef;
-  const cellsRef = useRef<CellPosition[]>([]);
   const rafRef = useRef<number>(0);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasHoverRef = useRef(false);
@@ -40,37 +33,28 @@ export function useMatrixTilt(options: {
 
   const scaleDelta = scaleMax - 1;
 
-  // Zell-Positionen cachen (nur bei Resize neu berechnen)
-  const updateCellPositions = useCallback(() => {
+  // Animation Frame: Positionen live via getBoundingClientRect (ein Layout-Read pro Frame, gebatcht)
+  const animate = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const cells = container.querySelectorAll<HTMLElement>("[data-tilt-cell]");
-    cellsRef.current = Array.from(cells).map((el) => {
-      const rect = el.getBoundingClientRect();
-      return {
-        element: el,
-        centerX: rect.left + rect.width / 2,
-        centerY: rect.top + rect.height / 2,
-      };
-    });
-  }, [containerRef]);
-
-  // Animation Frame: berechne Tilt für jede Zelle
-  const animate = useCallback(() => {
     const { x: mouseX, y: mouseY } = mouseRef.current;
-    const cells = cellsRef.current;
+    const cells = container.querySelectorAll<HTMLElement>("[data-tilt-cell]");
 
-    for (const cell of cells) {
-      const dx = mouseX - cell.centerX;
-      const dy = mouseY - cell.centerY;
+    for (const el of cells) {
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const dx = mouseX - centerX;
+      const dy = mouseY - centerY;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance > radius) {
-        cell.element.style.transform =
+        el.style.transform =
           "perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)";
-        cell.element.style.removeProperty("--glare");
-        cell.element.style.removeProperty("z-index");
+        el.style.removeProperty("--glare");
+        el.style.removeProperty("z-index");
         continue;
       }
 
@@ -83,19 +67,19 @@ export function useMatrixTilt(options: {
       const tiltY = normalizedDx * maxTilt * intensity;
       const scale = 1 + scaleDelta * intensity;
 
-      cell.element.style.transform = `perspective(600px) rotateX(${String(tiltX)}deg) rotateY(${String(tiltY)}deg) scale(${String(scale)})`;
+      el.style.transform = `perspective(600px) rotateX(${String(tiltX)}deg) rotateY(${String(tiltY)}deg) scale(${String(scale)})`;
 
       const glareOpacity = glareIntensity * intensity;
       const glareX = 50 + normalizedDx * 30;
       const glareY = 50 + normalizedDy * 30;
-      cell.element.style.setProperty(
+      el.style.setProperty(
         "--glare",
         `radial-gradient(circle at ${String(glareX)}% ${String(glareY)}%, rgba(255,255,255,${String(glareOpacity)}) 0%, transparent 60%)`
       );
 
-      cell.element.style.zIndex = String(Math.round(intensity * 10));
+      el.style.zIndex = String(Math.round(intensity * 10));
     }
-  }, [maxTilt, radius, glareIntensity, scaleDelta]);
+  }, [containerRef, maxTilt, radius, glareIntensity, scaleDelta]);
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -109,17 +93,21 @@ export function useMatrixTilt(options: {
 
   const handleMouseLeave = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
-    for (const cell of cellsRef.current) {
-      cell.element.style.transform =
+    const container = containerRef.current;
+    if (!container) return;
+
+    const cells = container.querySelectorAll<HTMLElement>("[data-tilt-cell]");
+    for (const el of cells) {
+      el.style.transform =
         "perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)";
-      cell.element.style.transition = `transform ${String(resetDuration)}ms ease-out`;
-      cell.element.style.removeProperty("--glare");
-      cell.element.style.removeProperty("z-index");
+      el.style.transition = `transform ${String(resetDuration)}ms ease-out`;
+      el.style.removeProperty("--glare");
+      el.style.removeProperty("z-index");
       setTimeout(() => {
-        cell.element.style.transition = "transform 100ms ease-out";
+        el.style.transition = "transform 100ms ease-out";
       }, resetDuration);
     }
-  }, [resetDuration]);
+  }, [containerRef, resetDuration]);
 
   useEffect(() => {
     hasHoverRef.current =
@@ -128,30 +116,14 @@ export function useMatrixTilt(options: {
   }, []);
 
   useEffect(() => {
-    updateCellPositions();
-
-    const onResize = () => {
-      updateCellPositions();
-    };
-    const onScroll = () => {
-      updateCellPositions();
-    };
-
-    window.addEventListener("resize", onResize);
-    const scrollContainer = containerRef.current?.closest("[data-matrix-scroll]");
-    scrollContainer?.addEventListener("scroll", onScroll);
-
     return () => {
-      window.removeEventListener("resize", onResize);
-      scrollContainer?.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [updateCellPositions, containerRef]);
+  }, []);
 
   return {
     containerRef,
     handleMouseMove,
     handleMouseLeave,
-    updateCellPositions,
   };
 }

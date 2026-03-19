@@ -22,7 +22,6 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
   const {
     handleMouseMove: handleTiltMouseMove,
     handleMouseLeave: handleTiltMouseLeave,
-    updateCellPositions,
   } = useMatrixTilt({ containerRef: scrollRef });
 
   useEffect(() => {
@@ -45,15 +44,6 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
       observer.disconnect();
     };
   }, []);
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      updateCellPositions();
-    });
-    return () => {
-      cancelAnimationFrame(id);
-    };
-  }, [techniquesByTactic, updateCellPositions]);
 
   const handleSelect = useCallback(
     (id: string) => {
