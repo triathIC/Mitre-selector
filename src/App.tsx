@@ -1,4 +1,5 @@
 import { Component, lazy, Suspense } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { AppProvider } from "@/context/AppContext";
 import { useAppContext } from "@/context/useAppContext";
 import { useDataLoader } from "@/hooks/useDataLoader";
@@ -108,6 +109,7 @@ export default function App() {
   return (
     <AppProvider>
       <AppContent />
+      <Analytics />
     </AppProvider>
   );
 }
