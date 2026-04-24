@@ -2398,5 +2398,65 @@
     "version": 1,
     "confidence": "experimental",
     "tuning_notes": "Public-facing apps with large user bases will naturally have high IP diversity. Baseline normal sign-in patterns per application and alert on deviations exceeding 2-3 standard deviations."
+  },
+  {
+    "mapping_id": "KQL-T1528-001",
+    "technique_id": "T1528",
+    "product": "Microsoft Sentinel",
+    "data_connector": "Microsoft Entra ID",
+    "log_sources": [
+      "SigninLogs"
+    ],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "AI-Enabled Device Code Phishing from Unknown IPs",
+    "description": "Detects device code authentication flows from IP addresses not previously seen for the user in the last 30 days. Covers AI-driven phishing campaigns abusing OAuth device code flows (T1528, T1566.002).",
+    "kql": "// Device Code Auth von unbekannten Quell-IPs — potenzielle AI-Phishing-Kampagne\nSigninLogs\n| where TimeGenerated > ago(24h)\n| where AuthenticationProtocol == \"deviceCode\"\n| where ResultType == 0\n| summarize FirstSeen = min(TimeGenerated), Count = count()\n    by UserPrincipalName, IPAddress, AppDisplayName,\n       tostring(LocationDetails.countryOrRegion)\n| join kind=leftouter (\n    SigninLogs\n    | where TimeGenerated between (ago(30d) .. ago(24h))\n    | where AuthenticationProtocol == \"deviceCode\"\n    | summarize HistoricalCount = count() by UserPrincipalName, IPAddress\n) on UserPrincipalName, IPAddress\n| where isempty(HistoricalCount)\n| project FirstSeen, UserPrincipalName, IPAddress,\n          AppDisplayName, CountryOrRegion = tostring(LocationDetails.countryOrRegion)\n| order by FirstSeen desc",
+    "tags": [
+      "device-code",
+      "oauth",
+      "phishing",
+      "ai-enabled",
+      "entra-id",
+      "initial-access"
+    ],
+    "author": "triathematician",
+    "references": [
+      "https://www.microsoft.com/en-us/security/blog/2026/04/ai-device-code-phishing/"
+    ],
+    "last_tested": "2026-04-24",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Adjust 30d baseline window based on environment. High false-positive risk for users who legitimately roam or use VPNs. Consider adding exclusion for known VPN IP ranges."
+  },
+  {
+    "mapping_id": "KQL-T1078.004-003",
+    "technique_id": "T1078.004",
+    "product": "Microsoft Sentinel",
+    "data_connector": "Microsoft Entra ID",
+    "log_sources": [
+      "AuditLogs"
+    ],
+    "query_type": "detection",
+    "severity": "critical",
+    "title": "New Entra Account with Privileged Role Assignment within 24h",
+    "description": "Detects newly created Entra ID accounts that receive privileged role assignments within 24 hours of creation. Covers NK IT worker infiltration campaigns with rapid privilege escalation (T1078.004, T1136.003, T1098.003).",
+    "kql": "// Neue Entra-Accounts mit sofortiger Privileged-Role-Zuweisung (<24h nach Erstellung)\nlet newAccounts =\n    AuditLogs\n    | where TimeGenerated > ago(14d)\n    | where OperationName == \"Add user\"\n    | extend NewUser = tostring(TargetResources[0].userPrincipalName)\n    | project NewUser, UserCreated = TimeGenerated;\nAuditLogs\n| where TimeGenerated > ago(14d)\n| where OperationName == \"Add member to role\"\n| extend TargetUser  = tostring(TargetResources[0].userPrincipalName)\n| extend AssignedRole = tostring(TargetResources[1].displayName)\n| where AssignedRole in (\n    \"Global Administrator\", \"Privileged Role Administrator\",\n    \"Security Administrator\", \"Helpdesk Administrator\",\n    \"User Administrator\", \"Application Administrator\")\n| join kind=inner newAccounts on $left.TargetUser == $right.NewUser\n| where (TimeGenerated - UserCreated) < 1d\n| project TimeGenerated, TargetUser, AssignedRole,\n          UserCreated, TimeDelta = TimeGenerated - UserCreated\n| order by TimeGenerated desc",
+    "tags": [
+      "insider-threat",
+      "privilege-escalation",
+      "entra-id",
+      "nk-it-worker",
+      "onboarding",
+      "role-assignment"
+    ],
+    "author": "triathematician",
+    "references": [
+      "https://www.microsoft.com/en-us/security/blog/2026/04/jasper-sleet-nk-it-workers/"
+    ],
+    "last_tested": "2026-04-24",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Will fire on legitimate onboarding if privileged roles are assigned immediately. Consider adding exclusion for known HR/onboarding service accounts or integrating with HR system feed."
   }
 ]

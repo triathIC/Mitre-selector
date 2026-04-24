@@ -13,3 +13,7 @@ dist-node/
 # Obsidian PKM — nicht mit Repo syncen
 docs/PROJECT-DOCUMENTATION.md
 claude.md
+
+# Claude Code — lokal, nicht versioniert
+.claude/
+REVIEW.md
