@@ -2458,5 +2458,104 @@
     "version": 1,
     "confidence": "experimental",
     "tuning_notes": "Will fire on legitimate onboarding if privileged roles are assigned immediately. Consider adding exclusion for known HR/onboarding service accounts or integrating with HR system feed."
+  },
+  {
+    "mapping_id": "KQL-T1190-003",
+    "technique_id": "T1190",
+    "product": "Microsoft Sentinel",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": [
+      "DeviceProcessEvents"
+    ],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "Storm-1175 / Medusa — Anomalous Process Spawn from Web Server Worker",
+    "description": "Detects child processes (cmd, PowerShell, scripting hosts, LOLBins) spawned by IIS/SharePoint worker processes (w3wp.exe, wsmprovhost.exe, svchost.exe) operating in web-content paths. Microsoft Threat Intelligence (2026-04-06) attributes this pattern to Storm-1175, a Medusa ransomware affiliate that exploits unpatched public-facing IIS/Exchange/SharePoint instances for initial access before fast escalation and ransomware deployment.",
+    "kql": "// Anomalous process spawns from web server worker processes (IIS / SharePoint)\nDeviceProcessEvents\n| where InitiatingProcessFileName in~ (\"w3wp.exe\", \"wsmprovhost.exe\", \"svchost.exe\")\n| where FileName in~ (\"cmd.exe\", \"powershell.exe\", \"wscript.exe\", \"cscript.exe\", \"certutil.exe\", \"bitsadmin.exe\")\n| where InitiatingProcessCommandLine has_any (\"inetpub\", \"SharePoint\", \"wwwroot\")\n| project Timestamp, DeviceName, InitiatingProcessFileName, FileName, ProcessCommandLine, AccountName\n| order by Timestamp desc",
+    "tags": [
+      "initial-access",
+      "execution",
+      "impact",
+      "web-shell",
+      "ransomware",
+      "medusa",
+      "storm-1175",
+      "iis",
+      "sharepoint",
+      "T1059",
+      "T1486"
+    ],
+    "author": "triathIC",
+    "references": [
+      "https://attack.mitre.org/techniques/T1190/",
+      "https://www.microsoft.com/en-us/security/blog/2026/04/06/storm-1175-focuses-gaze-on-vulnerable-web-facing-assets-in-high-tempo-medusa-ransomware-operations/"
+    ],
+    "last_tested": "2026-04-28",
+    "version": 1,
+    "confidence": "testing",
+    "tuning_notes": "Inventory internet-exposed SharePoint/IIS assets and verify patch status (e.g., CVE-2026-32201). Whitelist known administrative tooling and monitoring agents that legitimately spawn cmd/PowerShell from w3wp.exe. Tighten by anchoring InitiatingProcessCommandLine to the actual web-root paths used in the environment."
+  },
+  {
+    "mapping_id": "KQL-T1210-001",
+    "technique_id": "T1210",
+    "product": "Microsoft Sentinel",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": [
+      "DeviceEvents"
+    ],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "CVE-2026-33824 — IKEEXT Service Anomaly",
+    "description": "Detects unexpected IKEEXT-related service installation or native-code process creation events hosted by svchost.exe. Such events on a Windows host are an exploitation indicator for CVE-2026-33824 (IKEv2). Pair with KQL-T1210-002 (external IKEv2 traffic volume) via Sentinel incident grouping to surface correlated host+network activity as a single incident.",
+    "kql": "// IKEEXT service anomalies hosted by svchost.exe — CVE-2026-33824 exploitation indicator\nDeviceEvents\n| where ActionType in (\"ServiceInstalled\", \"ProcessCreatedFromNativeCode\")\n| where InitiatingProcessFileName =~ \"svchost.exe\"\n| where AdditionalFields has \"IKEEXT\"\n| project Timestamp, DeviceName, DeviceId, ActionType, InitiatingProcessFileName, InitiatingProcessCommandLine, AdditionalFields\n| order by Timestamp desc",
+    "tags": [
+      "lateral-movement",
+      "privilege-escalation",
+      "exploitation",
+      "ikev2",
+      "vpn",
+      "cve-2026-33824",
+      "T1068"
+    ],
+    "author": "triathIC",
+    "references": [
+      "https://attack.mitre.org/techniques/T1210/"
+    ],
+    "last_tested": "2026-04-28",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Map Host entity to DeviceName/DeviceId in the analytics rule. In Sentinel, configure Incident Settings → Group related alerts → 'Grouping alerts into a single incident if all the entities match' on Host within a 1h lookback, and check 'Group alerts triggered by this analytics rule with alerts from other rules that produced the same entities' so this rule and KQL-T1210-002 correlate into one incident per host. Baseline-tune for legitimate IKEEXT service restarts triggered by VPN client installs or Windows Update."
+  },
+  {
+    "mapping_id": "KQL-T1210-002",
+    "technique_id": "T1210",
+    "product": "Microsoft Sentinel",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": [
+      "DeviceNetworkEvents"
+    ],
+    "query_type": "detection",
+    "severity": "medium",
+    "title": "CVE-2026-33824 — External IKEv2 Inbound Volume",
+    "description": "Detects elevated inbound IKEv2 traffic on UDP 500 / 4500 from non-private remotes against Windows hosts. High packet volume from an external source is a heuristic indicator of CVE-2026-33824 exploitation attempts or scanning. Pair with KQL-T1210-001 (IKEEXT service anomaly) via Sentinel incident grouping so traffic spikes that coincide with service anomalies on the same host surface as one incident.",
+    "kql": "// External IKEv2 traffic volume on UDP 500 / 4500 — CVE-2026-33824 scan/exploit heuristic\nDeviceNetworkEvents\n| where Protocol == \"Udp\"\n| where RemotePort in (500, 4500)\n| where RemoteIPType != \"Private\"\n| summarize PacketCount = count(), FirstSeen = min(Timestamp), LastSeen = max(Timestamp) by DeviceName, DeviceId, RemoteIP, RemotePort\n| where PacketCount > 50\n| order by PacketCount desc",
+    "tags": [
+      "lateral-movement",
+      "privilege-escalation",
+      "exploitation",
+      "ikev2",
+      "vpn",
+      "cve-2026-33824",
+      "network",
+      "T1068"
+    ],
+    "author": "triathIC",
+    "references": [
+      "https://attack.mitre.org/techniques/T1210/"
+    ],
+    "last_tested": "2026-04-28",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Map Host entity to DeviceName/DeviceId and IP entity to RemoteIP. In Sentinel, configure Incident Settings → Group related alerts → 'Grouping alerts into a single incident if all the entities match' on Host within a 1h lookback, and enable cross-rule grouping so this rule and KQL-T1210-001 correlate into one incident per host. The PacketCount > 50 threshold is intentionally conservative — VPN gateways and DirectAccess servers exceed this easily under normal load; raise the threshold or exclude known concentrator hosts before enabling as a near-real-time rule."
   }
 ]
