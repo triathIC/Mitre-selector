@@ -24,7 +24,6 @@ export function LegalNotice() {
 
         <div className="mt-4">
           <p>Kontakt:</p>
-          <p>Telefon: {LEGAL_INFO.phone}</p>
           <p>
             E-Mail:{" "}
             <a href={`mailto:${LEGAL_INFO.email}`} className="text-cyan-400 hover:text-cyan-300">
