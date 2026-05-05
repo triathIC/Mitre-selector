@@ -58,6 +58,8 @@ export interface KqlMapping {
   mapping_id: string;
   /** Technique or sub-technique ID this maps to */
   technique_id: string;
+  /** Additional technique IDs this mapping is also linked to (multi-tag in Sentinel/Defender). The mapping appears under each ID. */
+  additional_technique_ids?: string[];
   /** Sub-technique ID if applicable (e.g. "T1059.001"). Deprecated: use technique_id directly. */
   subtechnique_id?: string;
   /** Target product */

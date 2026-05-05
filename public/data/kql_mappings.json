@@ -2557,5 +2557,68 @@
     "version": 1,
     "confidence": "experimental",
     "tuning_notes": "Map Host entity to DeviceName/DeviceId and IP entity to RemoteIP. In Sentinel, configure Incident Settings → Group related alerts → 'Grouping alerts into a single incident if all the entities match' on Host within a 1h lookback, and enable cross-rule grouping so this rule and KQL-T1210-001 correlate into one incident per host. The PacketCount > 50 threshold is intentionally conservative — VPN gateways and DirectAccess servers exceed this easily under normal load; raise the threshold or exclude known concentrator hosts before enabling as a near-real-time rule."
+  },
+  {
+    "mapping_id": "KQL-T1111-001",
+    "technique_id": "T1111",
+    "additional_technique_ids": ["T1539"],
+    "product": "Microsoft Sentinel",
+    "data_connector": "Microsoft Entra ID",
+    "log_sources": ["SigninLogs"],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "AiTM Token Compromise — anomale Session-Token-Nutzung über Geo/IP-Sprünge",
+    "description": "Erkennt potenziellen Adversary-in-the-Middle Token-Replay (Evilginx/Modlishka): erfolgreiche Sign-ins desselben Users in derselben App, die innerhalb einer Stunde aus mehreren Ländern oder von vielen unterschiedlichen IPs stammen — typisch für gestohlene Session-Cookies, die parallel vom Angreifer-Proxy und vom legitimen Client genutzt werden.",
+    "kql": "SigninLogs\n| where TimeGenerated > ago(24h)\n| where ResultType == \"0\"\n| extend Country = tostring(LocationDetails.countryOrRegion)\n| summarize\n    IPCount = dcount(IPAddress),\n    CountryCount = dcount(Country),\n    SessionCount = count(),\n    IPList = make_set(IPAddress, 5),\n    Countries = make_set(Country, 5)\n    by UserPrincipalName, AppDisplayName, bin(TimeGenerated, 1h)\n| where CountryCount > 1 or IPCount > 2\n| extend RiskSignal = \"Possible AiTM Token Replay\"\n| project TimeGenerated, UserPrincipalName, AppDisplayName, IPCount, CountryCount, IPList, Countries, RiskSignal\n| order by CountryCount desc",
+    "tags": [
+      "aitm",
+      "session-hijack",
+      "evilginx",
+      "modlishka",
+      "entra-id",
+      "token-replay",
+      "T1111",
+      "T1539"
+    ],
+    "author": "Microsoft (adapted)",
+    "references": [
+      "https://attack.mitre.org/techniques/T1111/",
+      "https://attack.mitre.org/techniques/T1539/"
+    ],
+    "last_tested": "2026-05-05",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Schwellwert CountryCount > 1 in 1h ist High-Confidence — kombinieren mit AuthenticationDetails, um zwischen Phishing-resistenten Methoden (FIDO2/WHfB) und schwächeren MFA-Methoden (OTP/SMS) zu differenzieren. Travelling Users, VPN-Wechsel und Mobile-Carriers (CGNAT) erzeugen False Positives — Allowlist für bekannte Pendel-Routen oder Korrelation mit Entra ID Identity Protection RiskySignIns empfohlen. Bei breiter Adoption von Conditional Access Continuous Access Evaluation (CAE) sinkt die Token-Lifetime und damit die Trefferquote dieses Musters."
+  },
+  {
+    "mapping_id": "KQL-T1557.001-001",
+    "technique_id": "T1557.001",
+    "additional_technique_ids": ["T1550.002"],
+    "product": "Defender XDR",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": ["DeviceLogonEvents"],
+    "query_type": "hunting",
+    "severity": "high",
+    "title": "NTLM Relay / Pass-the-Hash — Lateral Movement über mehrere Ziele (CVE-2026-32202)",
+    "description": "Erkennt typisches Muster nach erfolgreichem NTLM-Hash-Leak (z.B. via LLMNR/NBT-NS-Poisoning oder CVE-2026-32202): ein Account authentifiziert sich per NTLM-Network-Logon innerhalb von 30 Minuten gegen mehr als drei unterschiedliche Geräte — starkes Indiz für Pass-the-Hash oder NTLM-Relay-Aktivität.",
+    "kql": "DeviceLogonEvents\n| where Timestamp > ago(24h)\n| where LogonType == \"Network\" and Protocol == \"Ntlm\"\n| where AccountName !endswith \"$\"\n| where isnotempty(AccountName)\n| summarize\n    TargetCount = dcount(DeviceName),\n    Targets = make_set(DeviceName, 10),\n    FirstSeen = min(Timestamp),\n    LastSeen = max(Timestamp)\n    by AccountName, AccountDomain, bin(Timestamp, 30m)\n| where TargetCount > 3\n| extend RiskSignal = \"Possible NTLM Lateral Movement / Pass-the-Hash\"\n| order by TargetCount desc",
+    "tags": [
+      "ntlm-relay",
+      "lateral-movement",
+      "pass-the-hash",
+      "llmnr-poisoning",
+      "cve-2026-32202",
+      "T1557.001",
+      "T1550.002"
+    ],
+    "author": "Microsoft (adapted)",
+    "references": [
+      "https://attack.mitre.org/techniques/T1557/001/",
+      "https://attack.mitre.org/techniques/T1550/002/"
+    ],
+    "last_tested": "2026-05-05",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Service-Accounts und Vulnerability-Scanner (z.B. Qualys, Defender for Identity Sensors) erzeugen legitime breit gefächerte NTLM-Network-Logons — diese vorab per Allowlist auf AccountName ausschließen. Schwelle TargetCount > 3 in 30m ist konservativ; in größeren AD-Umgebungen mit File-Server-Quervernetzung ggf. auf > 5 anheben. Computer-Accounts (endswith \"$\") werden bewusst ausgeschlossen, da Kerberos/NTLM-Replikation FP-Storm erzeugt. Für PtH-spezifische Signale ergänzend AlertEvidence/AlertInfo mit Title contains \"Suspected pass-the-hash\" aus Defender for Identity korrelieren."
   }
 ]

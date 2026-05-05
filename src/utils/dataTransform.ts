@@ -21,10 +21,12 @@ export function buildDataStore(
 
   const mappingsByTechnique = new Map<string, KqlMapping[]>();
   for (const m of mappings) {
-    const id = m.technique_id;
-    const list = mappingsByTechnique.get(id) ?? [];
-    list.push(m);
-    mappingsByTechnique.set(id, list);
+    const ids = [m.technique_id, ...(m.additional_technique_ids ?? [])];
+    for (const id of ids) {
+      const list = mappingsByTechnique.get(id) ?? [];
+      list.push(m);
+      mappingsByTechnique.set(id, list);
+    }
   }
 
   const subtechniquesByParent = new Map<string, string[]>();
