@@ -1,6 +1,5 @@
 import { Component, lazy, Suspense, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
 import { ClientOnly } from "vite-react-ssg";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -9,6 +8,7 @@ import { useAppContext } from "@/context/useAppContext";
 import { Header, Footer } from "@/components/Layout";
 import { FilterBar } from "@/components/FilterBar";
 import { MatrixView } from "@/components/MatrixView";
+import { Seo } from "@/components/Seo";
 
 const DetailPanel = lazy(() =>
   import("@/components/DetailPanel").then((m) => ({ default: m.DetailPanel }))
@@ -77,9 +77,14 @@ function AppContent() {
   }
 
   const dataStore = state.dataStore;
+  const seoTechnique = idFromUrl ? dataStore.techniques.get(idFromUrl) : undefined;
+  const seoMappings = idFromUrl
+    ? dataStore.mappingsByTechnique.get(idFromUrl) ?? []
+    : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-gray-200">
+      <Seo technique={seoTechnique} mappings={seoMappings} />
       <Header dataStore={dataStore} />
       <FilterBar />
       <div className="flex flex-1 overflow-hidden">
@@ -112,13 +117,11 @@ function AppContent() {
 function Layout() {
   const params = useParams<{ id: string }>();
   return (
-    <HelmetProvider>
-      <AppProvider initialSelectedTechniqueId={params.id ?? null}>
-        <AppContent />
-        <Analytics />
-        <SpeedInsights />
-      </AppProvider>
-    </HelmetProvider>
+    <AppProvider initialSelectedTechniqueId={params.id ?? null}>
+      <AppContent />
+      <Analytics />
+      <SpeedInsights />
+    </AppProvider>
   );
 }
 
