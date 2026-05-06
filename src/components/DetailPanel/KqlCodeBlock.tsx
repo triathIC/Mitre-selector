@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Simple regex-based KQL tokenizer for syntax highlighting.
@@ -62,15 +63,25 @@ const TOKEN_CLASSES: Record<string, string> = {
 
 export interface KqlCodeBlockProps {
   kql: string;
+  techniqueId: string;
+  queryName?: string;
   maxHeight?: string;
 }
 
-export function KqlCodeBlock({ kql, maxHeight = "20rem" }: KqlCodeBlockProps) {
+export function KqlCodeBlock({ kql, techniqueId, queryName, maxHeight = "20rem" }: KqlCodeBlockProps) {
   const { copy, copied } = useCopyToClipboard();
 
   const handleCopy = useCallback(() => {
-    void copy(kql);
-  }, [copy, kql]);
+    void (async () => {
+      const success = await copy(kql);
+      if (success) {
+        trackEvent({
+          name: "kql_copied",
+          props: { technique_id: techniqueId, query_name: queryName },
+        });
+      }
+    })();
+  }, [copy, kql, techniqueId, queryName]);
 
   const tokens = tokenizeKql(kql);
 

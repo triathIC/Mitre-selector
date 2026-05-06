@@ -2,6 +2,7 @@ import type { KqlMapping } from "@/core/models";
 import { Badge } from "@/components/ui";
 import { KqlCodeBlock } from "./KqlCodeBlock";
 import { SEVERITY_COLORS, CONFIDENCE_COLORS } from "@/core/constants";
+import { trackExternalClick } from "@/lib/analytics";
 
 export interface KqlCardProps {
   mapping: KqlMapping;
@@ -53,7 +54,11 @@ export function KqlCard({ mapping }: KqlCardProps) {
 
       {/* KQL code — the core value */}
       <div className="px-4 py-3">
-        <KqlCodeBlock kql={mapping.kql} />
+        <KqlCodeBlock
+          kql={mapping.kql}
+          techniqueId={mapping.technique_id}
+          queryName={mapping.title}
+        />
       </div>
 
       {/* Footer: author, refs, tuning */}
@@ -69,6 +74,9 @@ export function KqlCard({ mapping }: KqlCardProps) {
                   href={ref}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    trackExternalClick(ref);
+                  }}
                   className="text-gray-500 hover:text-cyan-400 hover:underline"
                 >
                   {extractHostname(ref)}

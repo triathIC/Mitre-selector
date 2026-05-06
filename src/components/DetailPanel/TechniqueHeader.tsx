@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { MitreTechnique } from "@/core/models";
 import { Button } from "@/components/ui";
+import { trackExternalClick } from "@/lib/analytics";
 
 export interface TechniqueHeaderProps {
   technique: MitreTechnique;
@@ -64,6 +65,9 @@ export function TechniqueHeader({ technique, onClose, closeButtonRef }: Techniqu
         href={technique.url}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => {
+          trackExternalClick(technique.url);
+        }}
         className="mt-2 inline-block text-xs text-gray-500 hover:text-cyan-400"
       >
         View on MITRE ATT&CK →

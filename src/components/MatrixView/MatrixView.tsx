@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DataStore, MitreTactic } from "@/core/models";
 import { useFilteredData } from "@/hooks/useFilteredData";
 import { useAppContext } from "@/context/useAppContext";
 import { useMatrixTilt } from "@/hooks/useMatrixTilt";
+import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { TacticColumn } from "./TacticColumn";
 
 export interface MatrixViewProps {
@@ -13,6 +14,19 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
   const { techniquesByTactic, techniqueMatchesFilter } = useFilteredData(dataStore);
   const { state, selectTechnique } = useAppContext();
   const selectedTechniqueId = state.selectedTechniqueId;
+
+  const filteredCount = useMemo(() => {
+    let count = 0;
+    for (const [, techniques] of techniquesByTactic) {
+      for (const t of techniques) {
+        if (techniqueMatchesFilter(t.id)) count++;
+      }
+    }
+    return count;
+  }, [techniquesByTactic, techniqueMatchesFilter]);
+
+  useSearchAnalytics(state.filters.searchQuery, filteredCount);
+
   const [mobileTactic, setMobileTactic] = useState<MitreTactic | "">(
     dataStore.tactics[0] ?? ""
   );

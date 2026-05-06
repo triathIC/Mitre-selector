@@ -6,6 +6,7 @@ import { KqlCard } from "./KqlCard";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { SEVERITY_ORDER } from "@/core/constants";
 import { buildContributionUrl } from "@/core/utils/github";
+import { trackEvent, trackExternalClick } from "@/lib/analytics";
 
 export interface DetailPanelProps {
   dataStore: DataStore;
@@ -83,6 +84,17 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [selectedId, handleEscape]);
+
+  useEffect(() => {
+    if (!technique) return;
+    trackEvent({
+      name: "technique_opened",
+      props: {
+        technique_id: technique.id,
+        tactic: technique.tactics.join(","),
+      },
+    });
+  }, [technique]);
 
   if (!selectedId) return <></>;
 
@@ -167,6 +179,9 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
                       href={contributionUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => {
+                        trackExternalClick(contributionUrl);
+                      }}
                       className="text-gray-500 hover:text-cyan-400 text-sm mt-4"
                     >
                       + Add another query for this technique →
@@ -185,6 +200,9 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
                   href={contributionUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    trackExternalClick(contributionUrl);
+                  }}
                   className="bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-2 rounded-md inline-flex items-center gap-2"
                 >
                   + Contribute a KQL query →
