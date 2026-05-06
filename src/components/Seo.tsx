@@ -3,7 +3,7 @@ import type { KqlMapping, MitreTechnique } from "@/core/models";
 
 const SITE_NAME = "MITRE ATT&CK KQL Explorer";
 const SITE_URL = "https://mitre.triath.xyz";
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
+const OG_IMAGE = `${SITE_URL}/og-image.svg`;
 const DEFAULT_TITLE = `${SITE_NAME} – Sentinel & Defender XDR Detection Queries`;
 const DEFAULT_DESCRIPTION =
   "Interactive MITRE ATT&CK matrix browser with curated KQL queries for Microsoft Sentinel and Defender XDR. Search detections by technique, tactic, platform.";
