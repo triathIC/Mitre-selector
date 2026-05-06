@@ -2620,5 +2620,69 @@
     "version": 1,
     "confidence": "experimental",
     "tuning_notes": "Service-Accounts und Vulnerability-Scanner (z.B. Qualys, Defender for Identity Sensors) erzeugen legitime breit gefächerte NTLM-Network-Logons — diese vorab per Allowlist auf AccountName ausschließen. Schwelle TargetCount > 3 in 30m ist konservativ; in größeren AD-Umgebungen mit File-Server-Quervernetzung ggf. auf > 5 anheben. Computer-Accounts (endswith \"$\") werden bewusst ausgeschlossen, da Kerberos/NTLM-Replikation FP-Storm erzeugt. Für PtH-spezifische Signale ergänzend AlertEvidence/AlertInfo mit Title contains \"Suspected pass-the-hash\" aus Defender for Identity korrelieren."
+  },
+  {
+    "mapping_id": "KQL-T1557.001-002",
+    "technique_id": "T1557.001",
+    "additional_technique_ids": ["T1539"],
+    "product": "Microsoft Sentinel",
+    "data_connector": "Microsoft Entra ID",
+    "log_sources": ["SigninLogs", "AADNonInteractiveUserSignInLogs"],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "AiTM Token Theft via Phishing Proxy — Token-Replay über mehrere IPs/Locations (15m-Fenster)",
+    "description": "Erkennt Session-Token-Diebstahl nach AiTM-Phishing: erfolgreiche Sign-Ins desselben Users in derselben App, die innerhalb eines 15-Minuten-Fensters von mehr als einer IP UND mehr als einer Location erfolgen, korreliert mit Non-Interactive Sign-Ins (typisches Token-Replay-Muster, da gestohlene Cookies oft Refresh-Tokens auslösen). Strenger als KQL-T1111-001 — fokussiert auf gleichzeitige Sessions in engem Zeitfenster.",
+    "kql": "SigninLogs\n| where TimeGenerated > ago(24h)\n| where ResultType == 0\n| summarize IPs = dcount(IPAddress), Locations = dcount(Location) by UserPrincipalName, AppDisplayName, bin(TimeGenerated, 15m)\n| where IPs > 1 and Locations > 1\n| join kind=inner (\n    AADNonInteractiveUserSignInLogs\n    | where TimeGenerated > ago(24h)\n    | where ResultType == 0\n    | project UserPrincipalName, IPAddress, UserAgent\n) on UserPrincipalName",
+    "tags": [
+      "aitm",
+      "token-theft",
+      "session-hijack",
+      "token-replay",
+      "phishing-proxy",
+      "entra-id",
+      "T1557.001",
+      "T1539"
+    ],
+    "author": "Microsoft (adapted)",
+    "references": [
+      "https://attack.mitre.org/techniques/T1557/001/",
+      "https://attack.mitre.org/techniques/T1539/",
+      "https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-token-protection"
+    ],
+    "last_tested": "2026-05-06",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Härten via Conditional Access: Token Protection (Preview) und Compliant Device Requirement aktivieren — beides reduziert die Replay-Wirksamkeit gestohlener Cookies. False Positives durch CGNAT, VPN-Wechsel oder Roaming-Mobilgeräte sind möglich; Allowlist auf bekannte Pendel-Routen oder Korrelation mit Entra ID Identity Protection RiskySignIns empfohlen. Der join auf UserPrincipalName ohne Zeitkorrelation kann bei vielen Non-Interactive Logins zu Fan-Out führen — bei Performance-Issues zusätzlich auf bin(TimeGenerated, 15m) im inneren Query joinen."
+  },
+  {
+    "mapping_id": "KQL-T1068-001",
+    "technique_id": "T1068",
+    "product": "Defender XDR",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": ["DeviceProcessEvents"],
+    "query_type": "hunting",
+    "severity": "high",
+    "title": "Linux Privilege Escalation Post-Exploit (CVE-2026-31431) — cp --no-preserve auf Azure Linux VMs/AKS",
+    "description": "Erkennt typisches Post-Exploit-Pattern nach erfolgreicher CVE-2026-31431-Ausnutzung auf Azure Linux VMs und AKS-Nodes: Aufruf von /bin/cp mit Flag --no-preserve durch nicht-root-Account, was beim Kopieren von SUID-Binaries oder Konfigdateien Owner/Permission-Reset und damit indirekte Privilege Escalation ermöglicht.",
+    "kql": "DeviceProcessEvents\n| where Timestamp > ago(24h)\n| where FileName == \"cp\" and FolderPath has \"/bin/\"\n| where ProcessCommandLine has \"--no-preserve\"\n| where AccountName != \"root\" and isnotempty(AccountName)\n| project Timestamp, DeviceName, DeviceId, AccountName, AccountDomain, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n| order by Timestamp desc",
+    "tags": [
+      "linux",
+      "privilege-escalation",
+      "cve-2026-31431",
+      "post-exploit",
+      "azure",
+      "aks",
+      "suid",
+      "T1068"
+    ],
+    "author": "Microsoft (adapted)",
+    "references": [
+      "https://attack.mitre.org/techniques/T1068/",
+      "https://nvd.nist.gov/vuln/detail/CVE-2026-31431"
+    ],
+    "last_tested": "2026-05-06",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Original-Query nutzte Windows SecurityEvent (EventID 4688) — auf Linux nicht vorhanden. Adaptiert auf MDE for Linux DeviceProcessEvents. FolderPath-Filter '/bin/' schließt Windows-Devices und ungewöhnliche Pfade aus. Falls auch andere Pfade relevant sind (z.B. /usr/bin/cp), Filter erweitern. CI/CD-Pipelines und Container-Build-Skripte auf AKS-Nodes können legitime --no-preserve-Aufrufe enthalten — Allowlist via InitiatingProcessFileName (z.B. dockerd, containerd-shim) empfohlen. Bei Treffern parallel DeviceFileEvents auf SUID-Files (chmod u+s) für vollständige Exploit-Chain prüfen."
   }
 ]
