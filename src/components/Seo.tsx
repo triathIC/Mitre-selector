@@ -39,6 +39,7 @@ export function Seo({ technique, mappings = [] }: SeoProps) {
   if (!technique) {
     return (
       <Head>
+        <meta charSet="UTF-8" />
         <title>{DEFAULT_TITLE}</title>
         <meta name="description" content={DEFAULT_DESCRIPTION} />
         <link rel="canonical" href={`${SITE_URL}/`} />
@@ -77,6 +78,7 @@ export function Seo({ technique, mappings = [] }: SeoProps) {
 
   return (
     <Head>
+      <meta charSet="UTF-8" />
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
