@@ -1,15 +1,15 @@
 import { useEffect } from "react";
-import type { KqlMapping, MitreTechnique } from "@/types";
-import { buildDataStore } from "@/utils/dataTransform";
+import { loadDataStore } from "@/core/utils/loadDataStore";
 import { useAppContext } from "@/context/useAppContext";
 
 const BASE = import.meta.env.BASE_URL;
-const MITRE_JSON = `${BASE}data/mitre_techniques.json`;
-const KQL_JSON = `${BASE}data/kql_mappings.json`;
+const TECHNIQUES_URL = `${BASE}data/mitre_techniques.json`;
+const MAPPINGS_URL = `${BASE}data/kql_mappings.json`;
 
 /**
- * Fetches both JSON data sources in parallel, builds DataStore, and dispatches to context.
- * Call once at app root (e.g. App.tsx) on mount.
+ * Loads MITRE + KQL data once on mount and dispatches the resulting DataStore
+ * (or error) into the AppContext. Thin React wrapper around the framework-free
+ * `loadDataStore` core function.
  */
 export function useDataLoader(): void {
   const { dispatch } = useAppContext();
@@ -17,41 +17,17 @@ export function useDataLoader(): void {
   useEffect(() => {
     let cancelled = false;
 
-    async function load(): Promise<void> {
-      try {
-        const [mitreRes, kqlRes] = await Promise.all([
-          fetch(MITRE_JSON),
-          fetch(KQL_JSON),
-        ]);
-
-        if (!mitreRes.ok) {
-          throw new Error(`Failed to load MITRE data: ${String(mitreRes.status)}`);
-        }
-        if (!kqlRes.ok) {
-          throw new Error(`Failed to load KQL mappings: ${String(kqlRes.status)}`);
-        }
-
-        const [techniques, mappings]: [MitreTechnique[], KqlMapping[]] = await Promise.all([
-          mitreRes.json() as Promise<MitreTechnique[]>,
-          kqlRes.json() as Promise<KqlMapping[]>,
-        ]);
-
+    loadDataStore({ techniquesUrl: TECHNIQUES_URL, mappingsUrl: MAPPINGS_URL })
+      .then((dataStore) => {
         if (cancelled) return;
-
-        if (!Array.isArray(techniques) || !Array.isArray(mappings)) {
-          throw new Error("Invalid data shape: expected arrays");
-        }
-
-        const dataStore = buildDataStore(techniques, mappings);
         dispatch({ type: "DATA_LOADED", payload: dataStore });
-      } catch (err) {
+      })
+      .catch((err: unknown) => {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : "Unknown error loading data";
         dispatch({ type: "DATA_ERROR", payload: message });
-      }
-    }
+      });
 
-    void load();
     return () => {
       cancelled = true;
     };

@@ -4,7 +4,7 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
-import type { AppAction, AppState, FilterState } from "@/types";
+import type { AppAction, AppState, FilterState } from "@/core/models";
 import { AppContext, type AppContextValue } from "@/context/context";
 
 const initialFilters: FilterState = {

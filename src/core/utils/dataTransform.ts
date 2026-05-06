@@ -3,8 +3,8 @@ import type {
   KqlMapping,
   MitreTechnique,
   MitreTactic,
-} from "@/types";
-import { TACTIC_ORDER } from "./constants";
+} from "../models";
+import { TACTIC_ORDER } from "../constants";
 
 /**
  * Build in-memory DataStore from raw JSON arrays.

@@ -1,7 +1,7 @@
-import type { KqlMapping } from "@/types";
+import type { KqlMapping } from "@/core/models";
 import { Badge } from "@/components/ui";
 import { KqlCodeBlock } from "./KqlCodeBlock";
-import { SEVERITY_COLORS, CONFIDENCE_COLORS } from "@/utils/constants";
+import { SEVERITY_COLORS, CONFIDENCE_COLORS } from "@/core/constants";
 
 export interface KqlCardProps {
   mapping: KqlMapping;

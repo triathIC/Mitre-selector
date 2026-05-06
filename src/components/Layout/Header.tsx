@@ -1,4 +1,4 @@
-import type { DataStore } from "@/types";
+import type { DataStore } from "@/core/models";
 
 export interface HeaderProps {
   dataStore?: DataStore | null;

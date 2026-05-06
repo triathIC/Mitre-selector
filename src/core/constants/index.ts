@@ -1,4 +1,4 @@
-import type { MitreTactic } from "@/types";
+import type { KqlMapping, MitreTactic } from "../models";
 
 /**
  * Canonical MITRE ATT&CK tactic display order (left to right in matrix).
@@ -47,3 +47,14 @@ export const CONFIDENCE_COLORS: Record<
 };
 
 export const DEBOUNCE_MS = 300;
+
+/**
+ * Severity ranking from most to least severe — used for sorting KQL mapping lists.
+ */
+export const SEVERITY_ORDER: KqlMapping["severity"][] = [
+  "critical",
+  "high",
+  "medium",
+  "low",
+  "informational",
+];

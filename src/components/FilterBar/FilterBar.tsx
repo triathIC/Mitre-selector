@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import type { KqlMapping, Platform } from "@/types";
+import type { KqlMapping, Platform } from "@/core/models";
 import { useAppContext } from "@/context/useAppContext";
 import { Button } from "@/components/ui";
-import { DEBOUNCE_MS } from "@/utils/constants";
+import { DEBOUNCE_MS } from "@/core/constants";
 
 const PLATFORMS: Array<Platform | "all"> = [
   "all",

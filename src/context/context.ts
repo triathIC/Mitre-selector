@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { AppAction, AppState, FilterState } from "@/types";
+import type { AppAction, AppState, FilterState } from "@/core/models";
 
 export type AppContextValue = {
   state: AppState;

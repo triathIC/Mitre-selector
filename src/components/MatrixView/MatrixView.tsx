@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { DataStore, MitreTactic } from "@/types";
+import type { DataStore, MitreTactic } from "@/core/models";
 import { useFilteredData } from "@/hooks/useFilteredData";
 import { useAppContext } from "@/context/useAppContext";
 import { useMatrixTilt } from "@/hooks/useMatrixTilt";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MitreTechnique } from "@/types";
+import type { MitreTechnique } from "@/core/models";
 import { Button } from "@/components/ui";
 
 export interface TechniqueHeaderProps {

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DataStore, KqlMapping } from "@/types";
+import type { DataStore, KqlMapping } from "@/core/models";
 import { useAppContext } from "@/context/useAppContext";
 import { TechniqueHeader } from "./TechniqueHeader";
 import { KqlCard } from "./KqlCard";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { SEVERITY_ORDER } from "./constants";
-import { buildContributionUrl } from "@/utils/github";
+import { SEVERITY_ORDER } from "@/core/constants";
+import { buildContributionUrl } from "@/core/utils/github";
 
 export interface DetailPanelProps {
   dataStore: DataStore;
