@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { DataStore, MitreTactic } from "@/core/models";
 import { useFilteredData } from "@/hooks/useFilteredData";
 import { useAppContext } from "@/context/useAppContext";
@@ -12,8 +13,9 @@ export interface MatrixViewProps {
 
 export function MatrixView({ dataStore }: MatrixViewProps) {
   const { techniquesByTactic, techniqueMatchesFilter } = useFilteredData(dataStore);
-  const { state, selectTechnique } = useAppContext();
+  const { state } = useAppContext();
   const selectedTechniqueId = state.selectedTechniqueId;
+  const navigate = useNavigate();
 
   const filteredCount = useMemo(() => {
     let count = 0;
@@ -61,9 +63,9 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
 
   const handleSelect = useCallback(
     (id: string) => {
-      selectTechnique(id);
+      navigate(`/technique/${id}`);
     },
-    [selectTechnique]
+    [navigate]
   );
 
   const tactics = dataStore.tactics;

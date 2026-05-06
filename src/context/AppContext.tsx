@@ -4,8 +4,22 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
-import type { AppAction, AppState, FilterState } from "@/core/models";
+import type {
+  AppAction,
+  AppState,
+  FilterState,
+  KqlMapping,
+  MitreTechnique,
+} from "@/core/models";
+import { buildDataStore } from "@/core/utils/dataTransform";
 import { AppContext, type AppContextValue } from "@/context/context";
+import techniquesRaw from "../../public/data/mitre_techniques.json";
+import mappingsRaw from "../../public/data/kql_mappings.json";
+
+const STATIC_DATA_STORE = buildDataStore(
+  techniquesRaw as MitreTechnique[],
+  mappingsRaw as KqlMapping[]
+);
 
 const initialFilters: FilterState = {
   platform: "all",
@@ -15,13 +29,15 @@ const initialFilters: FilterState = {
   showOnlyWithKql: false,
 };
 
-const initialState: AppState = {
-  dataStore: null,
-  isLoading: true,
-  error: null,
-  selectedTechniqueId: null,
-  filters: initialFilters,
-};
+function makeInitialState(initialSelectedTechniqueId: string | null): AppState {
+  return {
+    dataStore: STATIC_DATA_STORE,
+    isLoading: false,
+    error: null,
+    selectedTechniqueId: initialSelectedTechniqueId,
+    filters: initialFilters,
+  };
+}
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
@@ -53,8 +69,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+export interface AppProviderProps {
+  children: ReactNode;
+  /** Pre-set the selected technique (e.g. from URL param) so SSR + first paint match. */
+  initialSelectedTechniqueId?: string | null;
+}
+
+export function AppProvider({
+  children,
+  initialSelectedTechniqueId = null,
+}: AppProviderProps) {
+  const [state, dispatch] = useReducer(
+    appReducer,
+    initialSelectedTechniqueId,
+    makeInitialState
+  );
 
   const selectTechnique = useCallback((id: string | null) => {
     dispatch({ type: "SELECT_TECHNIQUE", payload: id });

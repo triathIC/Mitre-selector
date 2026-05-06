@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { DataStore, KqlMapping } from "@/core/models";
 import { useAppContext } from "@/context/useAppContext";
 import { TechniqueHeader } from "./TechniqueHeader";
@@ -21,8 +22,9 @@ function sortMappingsBySeverity(mappings: KqlMapping[]): KqlMapping[] {
 }
 
 export function DetailPanel({ dataStore }: DetailPanelProps) {
-  const { state, selectTechnique } = useAppContext();
+  const { state } = useAppContext();
   const selectedId = state.selectedTechniqueId;
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"detection" | "hunting">("detection");
 
   const technique = useMemo(() => {
@@ -55,8 +57,8 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleClose = useCallback(() => {
-    selectTechnique(null);
-  }, [selectTechnique]);
+    navigate("/");
+  }, [navigate]);
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -72,9 +74,9 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
 
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") selectTechnique(null);
+      if (e.key === "Escape") navigate("/");
     },
-    [selectTechnique]
+    [navigate]
   );
 
   useEffect(() => {
@@ -229,7 +231,7 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
                       <button
                         type="button"
                         onClick={() => {
-                          selectTechnique(id);
+                          navigate(`/technique/${id}`);
                         }}
                         className="text-left text-sm text-cyan-400 hover:underline focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       >

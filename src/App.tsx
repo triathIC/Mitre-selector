@@ -1,9 +1,11 @@
-import { Component, lazy, Suspense } from "react";
+import { Component, lazy, Suspense, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
+import { ClientOnly } from "vite-react-ssg";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AppProvider } from "@/context/AppContext";
 import { useAppContext } from "@/context/useAppContext";
-import { useDataLoader } from "@/hooks/useDataLoader";
 import { Header, Footer } from "@/components/Layout";
 import { FilterBar } from "@/components/FilterBar";
 import { MatrixView } from "@/components/MatrixView";
@@ -42,16 +44,15 @@ class ErrorBoundary extends Component<
 }
 
 function AppContent() {
-  useDataLoader();
-  const { state } = useAppContext();
+  const { state, selectTechnique } = useAppContext();
+  const params = useParams<{ id: string }>();
+  const idFromUrl = params.id ?? null;
 
-  if (state.isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface">
-        <p className="text-gray-400">Loading MITRE ATT&CK data…</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (idFromUrl !== state.selectedTechniqueId) {
+      selectTechnique(idFromUrl);
+    }
+  }, [idFromUrl, selectTechnique, state.selectedTechniqueId]);
 
   if (state.error) {
     return (
@@ -69,7 +70,7 @@ function AppContent() {
       <div className="flex min-h-screen items-center justify-center bg-surface p-4">
         <div className="max-w-md text-center text-red-400">
           <p className="font-medium">App state is invalid</p>
-          <p className="mt-2 text-sm">Data store is missing after load completed.</p>
+          <p className="mt-2 text-sm">Data store is missing.</p>
         </div>
       </div>
     );
@@ -84,7 +85,9 @@ function AppContent() {
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-auto">
           <ErrorBoundary>
-            <MatrixView dataStore={dataStore} />
+            <ClientOnly>
+              {() => <MatrixView dataStore={dataStore} />}
+            </ClientOnly>
           </ErrorBoundary>
         </main>
         {state.selectedTechniqueId && (
@@ -106,12 +109,17 @@ function AppContent() {
   );
 }
 
-export default function App() {
+function Layout() {
+  const params = useParams<{ id: string }>();
   return (
-    <AppProvider>
-      <AppContent />
-      <Analytics />
-      <SpeedInsights />
-    </AppProvider>
+    <HelmetProvider>
+      <AppProvider initialSelectedTechniqueId={params.id ?? null}>
+        <AppContent />
+        <Analytics />
+        <SpeedInsights />
+      </AppProvider>
+    </HelmetProvider>
   );
 }
+
+export default Layout;
