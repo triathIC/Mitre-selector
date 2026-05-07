@@ -9,6 +9,7 @@ import { Header, Footer } from "@/components/Layout";
 import { FilterBar } from "@/components/FilterBar";
 import { MatrixView } from "@/components/MatrixView";
 import { Seo } from "@/components/Seo";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 const DetailPanel = lazy(() =>
   import("@/components/DetailPanel").then((m) => ({ default: m.DetailPanel }))
@@ -121,6 +122,7 @@ function Layout() {
       <AppContent />
       <Analytics />
       <SpeedInsights />
+      <GoogleAnalytics />
     </AppProvider>
   );
 }
