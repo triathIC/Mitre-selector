@@ -7,6 +7,10 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.2.0] – 2026-05-08
+
 ### Added
 
 - Static-site generation via `vite-react-ssg`: every MITRE technique URL
@@ -121,3 +125,6 @@ sections below mirror the commit history.
 - Consent banner ships with two equally weighted choices but no
   "settings" view. Granular per-purpose toggles can be added without
   reshipping the gtag wiring.
+
+[Unreleased]: https://github.com/triathIC/Mitre-selector/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/triathIC/Mitre-selector/releases/tag/v0.2.0
