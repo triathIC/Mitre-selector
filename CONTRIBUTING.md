@@ -5,9 +5,10 @@ KQL detection and hunting queries are the core of this project. Contributions we
 ## How to contribute KQL queries
 
 1. Fork the repo
-2. Add your mapping to `data/kql_mappings.json`
-3. Follow the `KqlMapping` interface in [`src/types/index.ts`](src/types/index.ts)
-4. Submit a PR
+2. Add your mapping to `public/data/kql_mappings.json`
+3. Copy the file to `data/kql_mappings.json` to keep the CI mirror in sync
+4. Follow the `KqlMapping` interface in [`src/core/models/index.ts`](src/core/models/index.ts)
+5. Submit a PR
 
 ## KQL quality requirements
 
