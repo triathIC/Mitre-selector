@@ -9,6 +9,7 @@ sections below mirror the commit history.
 
 ### Changed
 
+- README: document `data/` vs `public/data/` directory structure and correct primary file path for KQL contributions.
 - Extracted `Severity` as a named type in `src/core/models/index.ts`; `KqlMapping.severity` and `SEVERITY_COLORS` key now reference it — single source of truth for severity values.
 - `SEVERITY_ORDER` typed as `Severity[]` (was `KqlMapping["severity"][]`); FilterBar derives its dropdown list from it instead of a duplicate hardcoded array.
 - Exported `PLATFORMS` constant from `src/core/constants/index.ts`; FilterBar derives its dropdown list from it instead of a duplicate hardcoded array.
