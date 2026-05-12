@@ -49,6 +49,8 @@ export type Platform =
   | "Network"
   | "Containers";
 
+export type Severity = "informational" | "low" | "medium" | "high" | "critical";
+
 /**
  * KQL Mapping — community-curated detection/hunting content.
  * This is the core value of the project.
@@ -60,8 +62,6 @@ export interface KqlMapping {
   technique_id: string;
   /** Additional technique IDs this mapping is also linked to (multi-tag in Sentinel/Defender). The mapping appears under each ID. */
   additional_technique_ids?: string[];
-  /** Sub-technique ID if applicable (e.g. "T1059.001"). Deprecated: use technique_id directly. */
-  subtechnique_id?: string;
   /** Target product */
   product: "Microsoft Sentinel" | "Defender XDR";
   /** Required data connector in Sentinel (e.g. "Microsoft Defender for Endpoint") */
@@ -71,7 +71,7 @@ export interface KqlMapping {
   /** Detection vs. proactive hunting */
   query_type: "detection" | "hunting";
   /** Severity rating */
-  severity: "informational" | "low" | "medium" | "high" | "critical";
+  severity: Severity;
   /** Short descriptive title */
   title: string;
   /** What this query detects and why it matters */

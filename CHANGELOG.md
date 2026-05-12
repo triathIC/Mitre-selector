@@ -7,7 +7,15 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+
+- Extracted `Severity` as a named type in `src/core/models/index.ts`; `KqlMapping.severity` and `SEVERITY_COLORS` key now reference it — single source of truth for severity values.
+- `SEVERITY_ORDER` typed as `Severity[]` (was `KqlMapping["severity"][]`); FilterBar derives its dropdown list from it instead of a duplicate hardcoded array.
+- Exported `PLATFORMS` constant from `src/core/constants/index.ts`; FilterBar derives its dropdown list from it instead of a duplicate hardcoded array.
+
+### Removed
+
+- Deprecated `subtechnique_id?` field removed from `KqlMapping` interface — unused since `technique_id` accepts sub-technique format directly.
 
 ## [0.2.0] – 2026-05-08
 

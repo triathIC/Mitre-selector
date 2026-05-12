@@ -2,21 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { KqlMapping, Platform } from "@/core/models";
 import { useAppContext } from "@/context/useAppContext";
 import { Button } from "@/components/ui";
-import { DEBOUNCE_MS } from "@/core/constants";
+import { DEBOUNCE_MS, PLATFORMS, SEVERITY_ORDER } from "@/core/constants";
 
-const PLATFORMS: Array<Platform | "all"> = [
-  "all",
-  "Windows",
-  "Linux",
-  "macOS",
-  "Azure AD",
-  "Office 365",
-  "Google Workspace",
-  "SaaS",
-  "IaaS",
-  "Network",
-  "Containers",
-];
+const ALL_PLATFORMS: Array<Platform | "all"> = ["all", ...PLATFORMS];
 
 const PRODUCTS: Array<KqlMapping["product"] | "all"> = [
   "all",
@@ -24,14 +12,7 @@ const PRODUCTS: Array<KqlMapping["product"] | "all"> = [
   "Defender XDR",
 ];
 
-const SEVERITIES: Array<KqlMapping["severity"] | "all"> = [
-  "all",
-  "critical",
-  "high",
-  "medium",
-  "low",
-  "informational",
-];
+const SEVERITIES: Array<KqlMapping["severity"] | "all"> = ["all", ...SEVERITY_ORDER];
 
 export function FilterBar() {
   const { state, setFilter, resetFilters, hasActiveFilters } = useAppContext();
@@ -90,7 +71,7 @@ export function FilterBar() {
         className="rounded border border-white/10 bg-surface-overlay px-2 py-1.5 text-sm text-gray-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         aria-label="Filter by platform"
       >
-        {PLATFORMS.map((p) => (
+        {ALL_PLATFORMS.map((p) => (
           <option key={p} value={p}>
             {p === "all" ? "All platforms" : p}
           </option>

@@ -1,4 +1,4 @@
-import type { KqlMapping, MitreTactic } from "../models";
+import type { MitreTactic, Severity } from "../models";
 
 /**
  * Canonical MITRE ATT&CK tactic display order (left to right in matrix).
@@ -23,10 +23,7 @@ export const TACTIC_ORDER: MitreTactic[] = [
 /**
  * Severity → Tailwind/color mapping for badges and matrix intensity.
  */
-export const SEVERITY_COLORS: Record<
-  "informational" | "low" | "medium" | "high" | "critical",
-  { bg: string; text: string; border: string }
-> = {
+export const SEVERITY_COLORS: Record<Severity, { bg: string; text: string; border: string }> = {
   critical: { bg: "bg-red-500/20", text: "text-red-400", border: "border-red-500/50" },
   high: { bg: "bg-orange-500/20", text: "text-orange-400", border: "border-orange-500/50" },
   medium: { bg: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/50" },
@@ -49,9 +46,25 @@ export const CONFIDENCE_COLORS: Record<
 export const DEBOUNCE_MS = 300;
 
 /**
- * Severity ranking from most to least severe — used for sorting KQL mapping lists.
+ * All supported MITRE ATT&CK platforms in display order.
  */
-export const SEVERITY_ORDER: KqlMapping["severity"][] = [
+export const PLATFORMS = [
+  "Windows",
+  "Linux",
+  "macOS",
+  "Azure AD",
+  "Office 365",
+  "Google Workspace",
+  "SaaS",
+  "IaaS",
+  "Network",
+  "Containers",
+] as const satisfies import("../models").Platform[];
+
+/**
+ * Severity ranking from most to least severe — used for sorting and filter dropdowns.
+ */
+export const SEVERITY_ORDER: Severity[] = [
   "critical",
   "high",
   "medium",
