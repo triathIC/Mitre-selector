@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useEffect } from "react";
+import { Component, lazy, Suspense, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { ClientOnly } from "vite-react-ssg";
 import { Analytics } from "@vercel/analytics/react";
@@ -8,9 +8,10 @@ import { useAppContext } from "@/context/useAppContext";
 import { Header, Footer } from "@/components/Layout";
 import { FilterBar } from "@/components/FilterBar";
 import { MatrixView } from "@/components/MatrixView";
-import { Seo } from "@/components/Seo";
+import { Seo, MAX_TOP_TECHNIQUES, type SeoTopTechnique } from "@/components/Seo";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { ConsentBanner } from "@/components/ConsentBanner";
+import type { DataStore } from "@/core/models";
 
 const DetailPanel = lazy(() =>
   import("@/components/DetailPanel").then((m) => ({ default: m.DetailPanel }))
@@ -45,8 +46,20 @@ class ErrorBoundary extends Component<
   }
 }
 
+function pickTopTechniques(dataStore: DataStore): SeoTopTechnique[] {
+  const entries: Array<{ id: string; name: string; count: number }> = [];
+  for (const [id, mappings] of dataStore.mappingsByTechnique) {
+    if (mappings.length === 0) continue;
+    const technique = dataStore.techniques.get(id);
+    if (technique === undefined) continue;
+    entries.push({ id, name: technique.name, count: mappings.length });
+  }
+  entries.sort((a, b) => (b.count - a.count) || a.id.localeCompare(b.id));
+  return entries.slice(0, MAX_TOP_TECHNIQUES).map(({ id, name }) => ({ id, name }));
+}
+
 function AppContent() {
-  const { state, selectTechnique } = useAppContext();
+  const { state, selectTechnique, setFilter } = useAppContext();
   const params = useParams<{ id: string }>();
   const idFromUrl = params.id ?? null;
 
@@ -55,6 +68,19 @@ function AppContent() {
       selectTechnique(idFromUrl);
     }
   }, [idFromUrl, selectTechnique, state.selectedTechniqueId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q !== null && q.length > 0) {
+      setFilter({ searchQuery: q });
+    }
+  }, [setFilter]);
+
+  const seoTopTechniques = useMemo<SeoTopTechnique[]>(
+    () => (idFromUrl || state.dataStore === null ? [] : pickTopTechniques(state.dataStore)),
+    [idFromUrl, state.dataStore]
+  );
 
   if (state.error) {
     return (
@@ -86,7 +112,11 @@ function AppContent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-gray-200">
-      <Seo technique={seoTechnique} mappings={seoMappings} />
+      <Seo
+        technique={seoTechnique}
+        mappings={seoMappings}
+        topTechniques={seoTopTechniques}
+      />
       <Header dataStore={dataStore} />
       <FilterBar />
       <div className="flex flex-1 overflow-hidden">

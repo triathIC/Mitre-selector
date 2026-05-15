@@ -10,6 +10,14 @@ const DEFAULT_DESCRIPTION =
 
 const MAX_DESCRIPTION = 155;
 const FALLBACK_PUBLISHED = "2026-01-01";
+const MAX_KEYWORDS = 20;
+const MAX_TOP_TECHNIQUES = 30;
+
+const SITE_NODE = {
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+} as const;
 
 function trimDescription(value: string): string {
   if (value.length <= MAX_DESCRIPTION) return value;
@@ -30,13 +38,68 @@ function pickDates(mappings: KqlMapping[]): { datePublished: string; dateModifie
   };
 }
 
+function buildKeywords(technique: MitreTechnique, mappings: KqlMapping[]): string[] {
+  const base = ["MITRE ATT&CK", technique.id, technique.name, "KQL", "Microsoft Sentinel", "Defender XDR"];
+  const fromMappings = new Set<string>();
+  for (const m of mappings) {
+    for (const tag of m.tags) {
+      if (fromMappings.size >= MAX_KEYWORDS) break;
+      fromMappings.add(tag);
+    }
+    if (fromMappings.size >= MAX_KEYWORDS) break;
+  }
+  return [...new Set([...base, ...fromMappings])].slice(0, MAX_KEYWORDS);
+}
+
+export interface SeoTopTechnique {
+  id: string;
+  name: string;
+}
+
 interface SeoProps {
   technique?: MitreTechnique;
   mappings?: KqlMapping[];
+  /** Used for the home-page ItemList JSON-LD. Ignored when `technique` is set. */
+  topTechniques?: SeoTopTechnique[];
 }
 
-export function Seo({ technique, mappings = [] }: SeoProps) {
+export function Seo({ technique, mappings = [], topTechniques = [] }: SeoProps) {
   if (!technique) {
+    const websiteJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      alternateName: "MITRE KQL Explorer",
+      url: SITE_URL,
+      description: DEFAULT_DESCRIPTION,
+      inLanguage: "en",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${SITE_URL}/?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    };
+
+    const itemListJsonLd = topTechniques.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "MITRE ATT&CK Techniques with KQL Detections",
+          description:
+            "Curated MITRE ATT&CK techniques with mapped KQL detection and hunting queries for Microsoft Sentinel and Defender XDR.",
+          numberOfItems: topTechniques.length,
+          itemListElement: topTechniques.map((t, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            url: `${SITE_URL}/technique/${t.id}`,
+            name: `${t.name} (${t.id})`,
+          })),
+        }
+      : null;
+
     return (
       <Head>
         <meta charSet="UTF-8" />
@@ -53,6 +116,10 @@ export function Seo({ technique, mappings = [] }: SeoProps) {
         <meta name="twitter:title" content={DEFAULT_TITLE} />
         <meta name="twitter:description" content={DEFAULT_DESCRIPTION} />
         <meta name="twitter:image" content={OG_IMAGE} />
+        <script type="application/ld+json">{JSON.stringify(websiteJsonLd)}</script>
+        {itemListJsonLd ? (
+          <script type="application/ld+json">{JSON.stringify(itemListJsonLd)}</script>
+        ) : null}
       </Head>
     );
   }
@@ -64,6 +131,7 @@ export function Seo({ technique, mappings = [] }: SeoProps) {
   );
   const url = `${SITE_URL}/technique/${technique.id}`;
   const { datePublished, dateModified } = pickDates(mappings);
+  const keywords = buildKeywords(technique, mappings);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -74,6 +142,16 @@ export function Seo({ technique, mappings = [] }: SeoProps) {
     author: { "@type": "Person", name: "Matthias" },
     datePublished,
     dateModified,
+    inLanguage: "en",
+    keywords,
+    about: {
+      "@type": "Thing",
+      name: `MITRE ATT&CK Technique ${technique.id}: ${technique.name}`,
+      identifier: technique.id,
+      url: technique.url,
+      sameAs: technique.url,
+    },
+    isPartOf: SITE_NODE,
   };
 
   return (
@@ -96,3 +174,5 @@ export function Seo({ technique, mappings = [] }: SeoProps) {
     </Head>
   );
 }
+
+export { MAX_TOP_TECHNIQUES };

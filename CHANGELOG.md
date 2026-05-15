@@ -7,6 +7,12 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
+### Added
+
+- Home-page JSON-LD: `WebSite` schema with `SearchAction` (`?q=` URL template) plus an `ItemList` of the top 30 techniques ranked by KQL-mapping count, so AI-search crawlers see structured navigation on the index page.
+- Per-technique `TechArticle` JSON-LD extended with `about` (MITRE technique as a `Thing` with `identifier` and `sameAs` linking to attack.mitre.org), `keywords` (derived from mapping tags + base terms), `isPartOf` (WebSite reference), and `inLanguage`.
+- `?q=` URL parameter handler in `AppContent`: on mount, reads `window.location.search` and pre-populates the search filter, making the home-page `SearchAction` URL template functional.
+
 ### Changed
 
 - README: document `data/` vs `public/data/` directory structure and correct primary file path for KQL contributions.
