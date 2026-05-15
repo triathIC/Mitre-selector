@@ -1,3 +1,38 @@
+# MITRE ATT&CK KQL Explorer — robots.txt
+# AI-search and generative-AI crawlers are explicitly welcomed so that the
+# curated KQL detection content can be discovered and cited.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
 User-agent: *
 Allow: /
+
 Sitemap: https://mitre.triath.xyz/sitemap.xml

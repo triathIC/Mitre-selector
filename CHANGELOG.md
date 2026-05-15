@@ -12,6 +12,7 @@ sections below mirror the commit history.
 - Home-page JSON-LD: `WebSite` schema with `SearchAction` (`?q=` URL template) plus an `ItemList` of the top 30 techniques ranked by KQL-mapping count, so AI-search crawlers see structured navigation on the index page.
 - Per-technique `TechArticle` JSON-LD extended with `about` (MITRE technique as a `Thing` with `identifier` and `sameAs` linking to attack.mitre.org), `keywords` (derived from mapping tags + base terms), `isPartOf` (WebSite reference), and `inLanguage`.
 - `?q=` URL parameter handler in `AppContent`: on mount, reads `window.location.search` and pre-populates the search filter, making the home-page `SearchAction` URL template functional.
+- `public/robots.txt` AI-crawler allowlist: explicit `Allow: /` rules for GPTBot, OAI-SearchBot, ChatGPT-User, PerplexityBot, Perplexity-User, ClaudeBot, Claude-SearchBot, Claude-User, Google-Extended, and Applebot-Extended (in addition to the existing wildcard rule).
 
 ### Changed
 
