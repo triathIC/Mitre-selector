@@ -1,9 +1,9 @@
 {
-  "mitreAttackVersion": "v19.0",
-  "downloadUrl": "https://raw.githubusercontent.com/mitre/cti/ATT%26CK-v19.0/enterprise-attack/enterprise-attack.json",
+  "mitreAttackVersion": "v19.1",
+  "downloadUrl": "https://raw.githubusercontent.com/mitre/cti/ATT%26CK-v19.1/enterprise-attack/enterprise-attack.json",
   "expectedTacticCount": 15,
-  "lastUpdated": "2026-05-26",
-  "stixBundleSha256": "987d0cfddb1e65797457cf2b045df9161140ede71fd627f15dfdd73c2a2c72ab",
+  "lastUpdated": "2026-05-27",
+  "stixBundleSha256": "fc783039f17fba646f79448f1322996457c658a9474f6d14c3bc924a2cf1c97d",
   "tacticShortnames": [
     "collection",
     "command-and-control",
