@@ -1,0 +1,103 @@
+name: MITRE Drift Check
+
+on:
+  schedule:
+    # Mondays 06:00 UTC — early warning that upstream MITRE ATT&CK has
+    # moved past the version pinned in data/mitre-manifest.json.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read pinned version from manifest
+        id: pinned
+        run: |
+          set -euo pipefail
+          version=$(jq -r '.mitreAttackVersion' data/mitre-manifest.json)
+          if [[ -z "$version" || "$version" == "null" ]]; then
+            echo "ERROR: data/mitre-manifest.json missing mitreAttackVersion" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Pinned: $version"
+
+      - name: Discover latest upstream tag
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest=$(gh api repos/mitre/cti/tags --paginate --jq '.[].name' \
+            | grep -E '^ATT&CK-v[0-9]+(\.[0-9]+)+$' \
+            | sort -V \
+            | tail -n1)
+          if [[ -z "$latest" ]]; then
+            echo "ERROR: could not detect any ATT&CK-v* tag in mitre/cti" >&2
+            exit 1
+          fi
+          version=${latest#ATT&CK-}
+          # GitHub URL-encodes `&` in tag links
+          tag_url=${latest//&/%26}
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$latest" >> "$GITHUB_OUTPUT"
+          echo "tag_url=$tag_url" >> "$GITHUB_OUTPUT"
+          echo "Upstream: $latest ($version)"
+
+      - name: Detect drift
+        id: detect
+        run: |
+          set -euo pipefail
+          pinned='${{ steps.pinned.outputs.version }}'
+          upstream='${{ steps.upstream.outputs.version }}'
+          if [[ "$pinned" == "$upstream" ]]; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "In sync: $pinned"
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+            echo "DRIFT: pinned=$pinned upstream=$upstream"
+          fi
+
+      - name: Open drift issue (idempotent)
+        if: steps.detect.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PINNED: ${{ steps.pinned.outputs.version }}
+          UPSTREAM: ${{ steps.upstream.outputs.version }}
+          UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
+          UPSTREAM_TAG_URL: ${{ steps.upstream.outputs.tag_url }}
+        run: |
+          set -euo pipefail
+          title="MITRE ATT&CK drift: upstream ${UPSTREAM}"
+
+          # Ensure the label exists (idempotent — ignores "already exists" error)
+          gh label create mitre-drift \
+            --color "FFA500" \
+            --description "Upstream MITRE ATT&CK release has moved past the pinned version" \
+            2>/dev/null || true
+
+          existing=$(gh issue list \
+            --label mitre-drift \
+            --state open \
+            --json title,number \
+            --jq ".[] | select(.title == \"${title}\") | .number" \
+            | head -n1 || true)
+          if [[ -n "$existing" ]]; then
+            echo "Issue already open: #$existing — skipping"
+            exit 0
+          fi
+
+          body_file=$(mktemp)
+          envsubst < .github/templates/mitre-drift-issue.md > "$body_file"
+
+          gh issue create \
+            --title "$title" \
+            --label mitre-drift \
+            --body-file "$body_file"
