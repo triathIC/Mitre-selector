@@ -7,6 +7,10 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
+### Changed
+
+- `npm run lint` is now green from a clean checkout. ESLint ignores include `dist-node` (build artifact), and `tsconfig.node.json` now includes `scripts/**/*.ts` so the typescript-eslint parser project covers the maintenance scripts. `scripts/generate-mitre-data.ts` was refactored to satisfy strict rules: `PLATFORM_MAP` / `TACTIC_MAP` are `Map<string,string>` (no object-injection warnings) and the two non-null assertions on `getExternalId` / `phase_name` were replaced by explicit guards + a type-predicate filter. Output is byte-identical to before the refactor.
+
 ### Removed
 
 - `.github/workflows/update-mitre-data.yml` — legacy weekly auto-sync workflow that opened a PR with the regenerated `mitre_techniques.json`. With v19 bundle pinning (manifest hash lock) and the new `mitre-drift-check.yml`, this workflow only produced no-op diffs and ran a third-party action (`peter-evans/create-pull-request@v6`) for no benefit.

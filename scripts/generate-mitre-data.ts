@@ -47,44 +47,44 @@ interface MitreTechniqueOut {
   deprecated: boolean;
 }
 
-const PLATFORM_MAP: Record<string, string> = {
-  Windows: "Windows",
-  Linux: "Linux",
-  macOS: "macOS",
-  PRE: "Azure AD",
-  "Azure AD": "Azure AD",
-  "Office 365": "Office 365",
-  "Google Workspace": "Google Workspace",
-  SaaS: "SaaS",
-  IaaS: "IaaS",
-  Network: "Network",
-  Containers: "Containers",
-};
+const PLATFORM_MAP = new Map<string, string>([
+  ["Windows", "Windows"],
+  ["Linux", "Linux"],
+  ["macOS", "macOS"],
+  ["PRE", "Azure AD"],
+  ["Azure AD", "Azure AD"],
+  ["Office 365", "Office 365"],
+  ["Google Workspace", "Google Workspace"],
+  ["SaaS", "SaaS"],
+  ["IaaS", "IaaS"],
+  ["Network", "Network"],
+  ["Containers", "Containers"],
+]);
 
-const TACTIC_MAP: Record<string, string> = {
-  reconnaissance: "Reconnaissance",
-  "resource-development": "Resource Development",
-  "initial-access": "Initial Access",
-  execution: "Execution",
-  persistence: "Persistence",
-  "privilege-escalation": "Privilege Escalation",
-  stealth: "Stealth",
-  "defense-impairment": "Defense Impairment",
-  "credential-access": "Credential Access",
-  discovery: "Discovery",
-  "lateral-movement": "Lateral Movement",
-  collection: "Collection",
-  "command-and-control": "Command and Control",
-  exfiltration: "Exfiltration",
-  impact: "Impact",
-};
+const TACTIC_MAP = new Map<string, string>([
+  ["reconnaissance", "Reconnaissance"],
+  ["resource-development", "Resource Development"],
+  ["initial-access", "Initial Access"],
+  ["execution", "Execution"],
+  ["persistence", "Persistence"],
+  ["privilege-escalation", "Privilege Escalation"],
+  ["stealth", "Stealth"],
+  ["defense-impairment", "Defense Impairment"],
+  ["credential-access", "Credential Access"],
+  ["discovery", "Discovery"],
+  ["lateral-movement", "Lateral Movement"],
+  ["collection", "Collection"],
+  ["command-and-control", "Command and Control"],
+  ["exfiltration", "Exfiltration"],
+  ["impact", "Impact"],
+]);
 
 function normalizePlatform(p: string): string {
-  return PLATFORM_MAP[p] ?? p;
+  return PLATFORM_MAP.get(p) ?? p;
 }
 
 function normalizeTactic(phaseName: string): string {
-  return TACTIC_MAP[phaseName] ?? phaseName;
+  return TACTIC_MAP.get(phaseName) ?? phaseName;
 }
 
 function getExternalId(obj: StixObject): string | null {
@@ -190,10 +190,13 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const externalId = getExternalId(ap)!;
+    const externalId = getExternalId(ap);
+    if (externalId === null) continue;
     const tactics = (ap.kill_chain_phases ?? [])
-      .filter((p) => p.kill_chain_name === "mitre-attack" && p.phase_name)
-      .map((p) => normalizeTactic(p.phase_name!))
+      .filter((p) => p.kill_chain_name === "mitre-attack")
+      .map((p) => p.phase_name)
+      .filter((name): name is string => typeof name === "string")
+      .map(normalizeTactic)
       .filter(Boolean);
 
     const platforms = (ap.x_mitre_platforms ?? []).map(normalizePlatform);
