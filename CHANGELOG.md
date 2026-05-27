@@ -7,6 +7,8 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
+## [0.3.0] – 2026-05-27
+
 ### Added
 
 - MITRE ATT&CK v19 STIX bundle pinning: `data/mitre-manifest.json` (downloadUrl, SHA-256, expectedTacticCount, locked tactic shortnames), `scripts/update-mitre.sh` to fetch + validate + lock the bundle, `scripts/lock-mitre-manifest.ts` helper, and `scripts/check-mitre-bundle.ts` verification (asserts hash match, 15 active tactics, `stealth` + `defense-impairment` present, legacy `defense-evasion` removed). New npm scripts `update-mitre` and `test:bundle`. The raw bundle is gitignored — pinning is via the manifest hash.
