@@ -7,6 +7,10 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
+### Removed
+
+- `.github/workflows/update-mitre-data.yml` — legacy weekly auto-sync workflow that opened a PR with the regenerated `mitre_techniques.json`. With v19 bundle pinning (manifest hash lock) and the new `mitre-drift-check.yml`, this workflow only produced no-op diffs and ran a third-party action (`peter-evans/create-pull-request@v6`) for no benefit.
+
 ## [0.3.0] – 2026-05-27
 
 ### Added
