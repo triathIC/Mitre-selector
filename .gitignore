@@ -17,3 +17,7 @@ claude.md
 # Claude Code — lokal, nicht versioniert
 .claude/
 REVIEW.md
+
+# Raw MITRE STIX bundle — pinned via data/mitre-manifest.json (SHA-256),
+# re-download with `bash scripts/update-mitre.sh`
+data/enterprise-attack.json

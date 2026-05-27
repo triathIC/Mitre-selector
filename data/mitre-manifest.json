@@ -1,0 +1,24 @@
+{
+  "mitreAttackVersion": "v19.0",
+  "downloadUrl": "https://raw.githubusercontent.com/mitre/cti/ATT%26CK-v19.0/enterprise-attack/enterprise-attack.json",
+  "expectedTacticCount": 15,
+  "lastUpdated": "2026-05-26",
+  "stixBundleSha256": "987d0cfddb1e65797457cf2b045df9161140ede71fd627f15dfdd73c2a2c72ab",
+  "tacticShortnames": [
+    "collection",
+    "command-and-control",
+    "credential-access",
+    "defense-impairment",
+    "discovery",
+    "execution",
+    "exfiltration",
+    "impact",
+    "initial-access",
+    "lateral-movement",
+    "persistence",
+    "privilege-escalation",
+    "reconnaissance",
+    "resource-development",
+    "stealth"
+  ]
+}

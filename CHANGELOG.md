@@ -9,6 +9,7 @@ sections below mirror the commit history.
 
 ### Added
 
+- MITRE ATT&CK v19 STIX bundle pinning: `data/mitre-manifest.json` (downloadUrl, SHA-256, expectedTacticCount, locked tactic shortnames), `scripts/update-mitre.sh` to fetch + validate + lock the bundle, `scripts/lock-mitre-manifest.ts` helper, and `scripts/check-mitre-bundle.ts` verification (asserts hash match, 15 active tactics, `stealth` + `defense-impairment` present, legacy `defense-evasion` removed). New npm scripts `update-mitre` and `test:bundle`. The raw bundle is gitignored — pinning is via the manifest hash.
 - Home-page JSON-LD: `WebSite` schema with `SearchAction` (`?q=` URL template) plus an `ItemList` of the top 30 techniques ranked by KQL-mapping count, so AI-search crawlers see structured navigation on the index page.
 - Per-technique `TechArticle` JSON-LD extended with `about` (MITRE technique as a `Thing` with `identifier` and `sameAs` linking to attack.mitre.org), `keywords` (derived from mapping tags + base terms), `isPartOf` (WebSite reference), and `inLanguage`.
 - `?q=` URL parameter handler in `AppContent`: on mount, reads `window.location.search` and pre-populates the search filter, making the home-page `SearchAction` URL template functional.

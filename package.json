@@ -8,7 +8,9 @@
     "build": "tsc -b && vite-react-ssg build && tsx scripts/generate-sitemap.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "generate-mitre-data": "npx tsx scripts/generate-mitre-data.ts"
+    "generate-mitre-data": "npx tsx scripts/generate-mitre-data.ts",
+    "update-mitre": "bash scripts/update-mitre.sh",
+    "test:bundle": "tsx scripts/check-mitre-bundle.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
