@@ -1,12 +1,12 @@
 /**
- * Fetches MITRE ATT&CK Enterprise STIX bundle and outputs mitre_techniques.json
- * matching the MitreTechnique interface. Run with: npx tsx scripts/generate-mitre-data.ts
+ * Reads the MITRE ATT&CK Enterprise STIX bundle pinned in
+ * data/mitre-manifest.json and outputs mitre_techniques.json matching
+ * the MitreTechnique interface. Falls back to the manifest's downloadUrl
+ * if the local bundle is missing.
  *
- * Output: data/mitre_techniques.json (and public/data/mitre_techniques.json for app)
+ * Run with: npm run generate-mitre-data
+ * Output:   data/mitre_techniques.json (and public/data/mitre_techniques.json)
  */
-
-const STIX_URL =
-  "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json";
 
 interface StixExternalRef {
   source_name?: string;
@@ -68,7 +68,8 @@ const TACTIC_MAP: Record<string, string> = {
   execution: "Execution",
   persistence: "Persistence",
   "privilege-escalation": "Privilege Escalation",
-  "defense-evasion": "Defense Evasion",
+  stealth: "Stealth",
+  "defense-impairment": "Defense Impairment",
   "credential-access": "Credential Access",
   discovery: "Discovery",
   "lateral-movement": "Lateral Movement",
@@ -100,13 +101,42 @@ function getMitreUrl(obj: StixObject, fallbackId: string): string {
   return ref?.url ?? `https://attack.mitre.org/techniques/${fallbackId.replace(".", "/")}/`;
 }
 
-async function main(): Promise<void> {
-  console.log("Fetching STIX bundle from", STIX_URL);
-  const res = await fetch(STIX_URL);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+interface Manifest {
+  mitreAttackVersion: string;
+  downloadUrl: string;
+}
+
+async function loadBundle(root: string): Promise<{ objects?: StixObject[] }> {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const localBundle = path.join(root, "data", "enterprise-attack.json");
+  if (fs.existsSync(localBundle)) {
+    console.log("Using pinned bundle:", localBundle);
+    return JSON.parse(fs.readFileSync(localBundle, "utf8")) as {
+      objects?: StixObject[];
+    };
   }
-  const bundle = (await res.json()) as { objects?: StixObject[] };
+  const manifestPath = path.join(root, "data", "mitre-manifest.json");
+  const manifest = JSON.parse(
+    fs.readFileSync(manifestPath, "utf8"),
+  ) as Manifest;
+  console.log(
+    `Pinned bundle not found; fetching ${manifest.mitreAttackVersion} from ${manifest.downloadUrl}`,
+  );
+  const res = await fetch(manifest.downloadUrl);
+  if (!res.ok) {
+    throw new Error(`HTTP ${String(res.status)}: ${res.statusText}`);
+  }
+  return (await res.json()) as { objects?: StixObject[] };
+}
+
+async function main(): Promise<void> {
+  const path = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const root = path.resolve(__dirname, "..");
+
+  const bundle = await loadBundle(root);
   const objects = bundle.objects ?? [];
   console.log("Total STIX objects:", objects.length);
 
@@ -184,10 +214,6 @@ async function main(): Promise<void> {
   techniques.sort((a, b) => a.id.localeCompare(b.id));
 
   const fs = await import("node:fs");
-  const path = await import("node:path");
-  const { fileURLToPath } = await import("node:url");
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const root = path.resolve(__dirname, "..");
   const dataDir = path.join(root, "data");
   const publicDataDir = path.join(root, "public", "data");
 

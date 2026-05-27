@@ -653,7 +653,7 @@
     "description": "Detects certutil.exe being used with -decode, -decodehex, or -encode flags. Adversaries abuse certutil as a living-off-the-land binary to decode Base64 payloads or obfuscate malicious files.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(1d)\n| where FileName =~ \"certutil.exe\"\n| where ProcessCommandLine has_any (\"-decode\", \"-decodehex\", \"-encode\", \"-urlcache\", \"-verifyctl\")\n| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "stealth",
       "obfuscation",
       "certutil",
       "lolbin",
@@ -683,7 +683,7 @@
     "description": "Hunts for process executions originating from Temp, AppData, ProgramData, or Downloads directories. Malware frequently drops obfuscated payloads in these user-writable locations to evade path-based security controls.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(7d)\n| where FolderPath has_any (\"\\\\Temp\\\\\", \"\\\\AppData\\\\Local\\\\Temp\", \"\\\\AppData\\\\Roaming\\\\\", \"\\\\ProgramData\\\\\", \"\\\\Downloads\\\\\")\n| where FileName !in~ (\"chrome.exe\", \"msedge.exe\", \"setup.exe\", \"Teams.exe\")\n| summarize ExecCount = count(), Devices = dcount(DeviceName) by FileName, FolderPath\n| where ExecCount >= 3\n| sort by ExecCount desc",
     "tags": [
-      "defense-evasion",
+      "stealth",
       "obfuscation",
       "temp-path",
       "suspicious-execution"
@@ -755,8 +755,8 @@
     "confidence": "testing"
   },
   {
-    "mapping_id": "KQL-T1562.001-001",
-    "technique_id": "T1562.001",
+    "mapping_id": "KQL-T1685-001",
+    "technique_id": "T1685",
     "product": "Microsoft Sentinel",
     "data_connector": "Microsoft Defender for Endpoint",
     "log_sources": [
@@ -768,7 +768,7 @@
     "description": "Detects command-line activity that stops, disables, or removes security services including Windows Defender, firewall, and EDR agents. This is a high-priority indicator of defense evasion prior to payload execution.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(1d)\n| where ProcessCommandLine has_any (\"sc stop\", \"sc delete\", \"sc config\", \"net stop\", \"Set-MpPreference -DisableRealtimeMonitoring\", \"netsh advfirewall set\", \"Uninstall-WindowsFeature\", \"Remove-MpPreference\")\n| where ProcessCommandLine has_any (\"WinDefend\", \"MsMpSvc\", \"Sense\", \"MpsSvc\", \"wscsvc\", \"SecurityHealthService\", \"DisableRealtimeMonitoring\", \"advfirewall\")\n| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "defense-impairment",
       "disable-tools",
       "tamper",
       "windows-defender"
@@ -783,8 +783,8 @@
     "confidence": "production"
   },
   {
-    "mapping_id": "KQL-T1562.001-002",
-    "technique_id": "T1562.001",
+    "mapping_id": "KQL-T1685-002",
+    "technique_id": "T1685",
     "product": "Microsoft Sentinel",
     "data_connector": "Microsoft Defender for Endpoint",
     "log_sources": [
@@ -796,7 +796,7 @@
     "description": "Hunts for PowerShell commands adding exclusions to Windows Defender (paths, processes, extensions). Attackers add exclusions for their malware staging directories or payload executables to prevent detection.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(7d)\n| where FileName in~ (\"powershell.exe\", \"pwsh.exe\")\n| where ProcessCommandLine has \"Add-MpPreference\" and ProcessCommandLine has_any (\"-ExclusionPath\", \"-ExclusionProcess\", \"-ExclusionExtension\")\n| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessFileName\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "defense-impairment",
       "disable-tools",
       "defender-exclusion",
       "powershell"
@@ -931,8 +931,8 @@
     "tuning_notes": "bcdedit is also used legitimately for dual-boot configuration. Correlate with other ransomware indicators before escalation."
   },
   {
-    "mapping_id": "KQL-T1070.001-001",
-    "technique_id": "T1070.001",
+    "mapping_id": "KQL-T1685.005-001",
+    "technique_id": "T1685.005",
     "product": "Defender XDR",
     "data_connector": "Microsoft Defender for Endpoint",
     "log_sources": [
@@ -944,7 +944,7 @@
     "description": "Detects the SecurityLogCleared action type, indicating the Windows Security event log was purged. Clearing security logs is a common defense evasion step to remove evidence of compromise activities.",
     "kql": "DeviceEvents\n| where Timestamp > ago(1d)\n| where ActionType == \"SecurityLogCleared\"\n| project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFileName, ActionType\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "defense-impairment",
       "indicator-removal",
       "event-log",
       "log-clearing"
@@ -959,8 +959,8 @@
     "confidence": "production"
   },
   {
-    "mapping_id": "KQL-T1070.001-002",
-    "technique_id": "T1070.001",
+    "mapping_id": "KQL-T1685.005-002",
+    "technique_id": "T1685.005",
     "product": "Defender XDR",
     "data_connector": "Microsoft Defender for Endpoint",
     "log_sources": [
@@ -972,7 +972,7 @@
     "description": "Hunts for usage of wevtutil.exe clear-log or PowerShell Clear-EventLog commands over the past 7 days. These utilities allow selective or bulk clearing of Windows event logs to cover tracks.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(7d)\n| where (FileName =~ \"wevtutil.exe\" and ProcessCommandLine has_any (\"cl\", \"clear-log\"))\n    or (FileName in~ (\"powershell.exe\", \"pwsh.exe\") and ProcessCommandLine has \"Clear-EventLog\")\n| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "defense-impairment",
       "indicator-removal",
       "wevtutil",
       "event-log"
@@ -1214,7 +1214,7 @@
     "description": "Detects mshta.exe launching cmd.exe, powershell.exe, rundll32.exe, or other processes commonly used in attack chains. Mshta executes HTA files and is abused as a proxy to run malicious scripts while evading application whitelisting.",
     "kql": "let SuspiciousChildren = dynamic([\"cmd.exe\", \"powershell.exe\", \"bash.exe\", \"cscript.exe\", \"msiexec.exe\", \"rundll32.exe\", \"regsvr32.exe\"]);\nDeviceProcessEvents\n| where Timestamp > ago(1d)\n| where InitiatingProcessFileName =~ \"mshta.exe\" or ProcessVersionInfoOriginalFileName =~ \"MSHTA.EXE\"\n| where FileName in~ (SuspiciousChildren)\n| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "stealth",
       "execution",
       "mshta",
       "proxy-execution",
@@ -1244,7 +1244,7 @@
     "description": "Detects regsvr32.exe spawned as a child process of Word, Excel, or PowerPoint. This chain indicates a macro or exploit in a document is using regsvr32 to proxy execution of a malicious DLL, commonly seen in TA551 and Qakbot campaigns.",
     "kql": "let OfficeApps = dynamic([\"winword.exe\", \"powerpnt.exe\", \"excel.exe\", \"outlook.exe\"]);\nDeviceProcessEvents\n| where Timestamp > ago(1d)\n| where FileName =~ \"regsvr32.exe\"\n| where InitiatingProcessFileName in~ (OfficeApps)\n| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessFileName\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "stealth",
       "execution",
       "regsvr32",
       "proxy-execution",
@@ -1304,7 +1304,7 @@
     "description": "Identifies living-off-the-land binaries making outbound connections to public IPs that have not been observed doing so in the preceding 30 days. Novel LOLBin network activity indicates potential C2 communication or tool staging via system binaries.",
     "kql": "let LOLBins = dynamic([\"certutil.exe\", \"mshta.exe\", \"regsvr32.exe\", \"rundll32.exe\", \"cscript.exe\", \"wscript.exe\", \"msiexec.exe\", \"bitsadmin.exe\", \"cmd.exe\", \"powershell.exe\", \"wmic.exe\", \"hh.exe\", \"msbuild.exe\", \"installutil.exe\", \"cmstp.exe\", \"esentutl.exe\", \"expand.exe\", \"extrac32.exe\", \"findstr.exe\", \"forfiles.exe\"]);\nlet KnownRemote = DeviceNetworkEvents\n| where Timestamp between (ago(30d) .. ago(2d))\n| where InitiatingProcessFileName in~ (LOLBins)\n| where RemoteIPType == \"Public\"\n| distinct InitiatingProcessFileName;\nDeviceNetworkEvents\n| where Timestamp > ago(2d)\n| where InitiatingProcessFileName in~ (LOLBins)\n| where RemoteIPType == \"Public\"\n| where InitiatingProcessFileName !in~ (KnownRemote)\n| project Timestamp, DeviceName, InitiatingProcessFileName, InitiatingProcessCommandLine, RemoteIP, RemotePort, InitiatingProcessAccountName\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "stealth",
       "proxy-execution",
       "lolbin",
       "network",
@@ -1365,8 +1365,8 @@
     "description": "Detects deletion of Conditional Access policies in Microsoft Entra ID. Removing CA policies weakens authentication controls and can establish persistence by eliminating MFA requirements or trusted location restrictions for compromised accounts.",
     "kql": "AuditLogs\n| where TimeGenerated > ago(1d)\n| where OperationName == \"Delete conditional access policy\"\n| extend DeletedPolicy = tostring(TargetResources[0].displayName)\n| extend Actor = tostring(InitiatedBy.user.userPrincipalName)\n| extend ActorIP = tostring(InitiatedBy.user.ipAddress)\n| project TimeGenerated, Actor, ActorIP, DeletedPolicy, CorrelationId\n| sort by TimeGenerated desc",
     "tags": [
+      "defense-impairment",
       "persistence",
-      "defense-evasion",
       "conditional-access",
       "azure-ad",
       "authentication"
@@ -1395,7 +1395,7 @@
     "description": "Detects creation of ISO, IMG, or VHD files on endpoints. These container formats bypass Mark-of-the-Web protections since files extracted from mounted images do not inherit the MOTW flag, allowing malware to execute without SmartScreen warnings.",
     "kql": "DeviceFileEvents\n| where Timestamp > ago(1d)\n| where ActionType == \"FileCreated\"\n| where FileName endswith_any (\".iso\", \".img\", \".vhd\", \".vhdx\")\n| where FolderPath has_any (\"\\\\Downloads\\\\\", \"\\\\Temp\\\\\", \"\\\\Desktop\\\\\", \"\\\\AppData\\\\\")\n| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessFileName, InitiatingProcessAccountName, SHA256\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "defense-impairment",
       "mark-of-the-web",
       "iso",
       "initial-access",
@@ -1426,8 +1426,8 @@
     "description": "Detects processes whose primary token was elevated to include SeDebugPrivilege. This privilege allows reading and writing to any process memory and is required for credential dumping tools. Legitimate use outside debugging is rare and warrants investigation.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(1d)\n| where ProcessCommandLine has_any (\"privilege::debug\", \"SeDebugPrivilege\", \"AdjustTokenPrivileges\")\n| where FileName !in~ (\"MsMpEng.exe\", \"svchost.exe\", \"csrss.exe\", \"lsass.exe\")\n| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName\n| sort by Timestamp desc",
     "tags": [
+      "stealth",
       "privilege-escalation",
-      "defense-evasion",
       "token-manipulation",
       "sedebug"
     ],
@@ -1636,8 +1636,7 @@
     "tags": [
       "discovery",
       "security-software-discovery",
-      "wmic",
-      "defense-evasion"
+      "wmic"
     ],
     "author": "Bert-JanP (adapted)",
     "references": [
@@ -1783,7 +1782,7 @@
     "description": "Detects processes where the file name on disk does not match the OriginalFileName in the PE version information. Attackers rename malicious binaries to mimic legitimate system executables (e.g., renaming malware to svchost.exe) to evade name-based detections.",
     "kql": "let SystemProcesses = dynamic([\"svchost.exe\", \"csrss.exe\", \"lsass.exe\", \"services.exe\", \"smss.exe\", \"winlogon.exe\", \"taskhost.exe\", \"spoolsv.exe\", \"RuntimeBroker.exe\"]);\nDeviceProcessEvents\n| where Timestamp > ago(1d)\n| where FileName in~ (SystemProcesses)\n| where isnotempty(ProcessVersionInfoOriginalFileName)\n| where FileName !~ ProcessVersionInfoOriginalFileName\n| project Timestamp, DeviceName, AccountName, FileName, ProcessVersionInfoOriginalFileName, FolderPath, ProcessCommandLine, SHA256\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "stealth",
       "masquerading",
       "process-name",
       "rename",
@@ -1812,7 +1811,7 @@
     "description": "Detects process execution patterns associated with process injection techniques, including CreateRemoteThread API calls, reflective DLL loading, and process hollowing indicators. Process injection is a core evasion technique used by implants and post-exploitation frameworks.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(1d)\n| where ProcessCommandLine has_any (\n    \"VirtualAllocEx\", \"WriteProcessMemory\", \"CreateRemoteThread\",\n    \"NtMapViewOfSection\", \"QueueUserAPC\", \"SetThreadContext\",\n    \"ReflectiveLoader\", \"-inject\", \"hollowing\"\n)\n| where FileName !in~ (\"MsMpEng.exe\", \"svchost.exe\")\n| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, SHA256\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "stealth",
       "privilege-escalation",
       "process-injection",
       "remote-thread"
@@ -2085,7 +2084,6 @@
     "kql": "let UACBypassBinaries = dynamic([\"fodhelper.exe\", \"computerdefaults.exe\", \"eventvwr.exe\", \"sdclt.exe\", \"slui.exe\"]);\nDeviceProcessEvents\n| where Timestamp > ago(1d)\n| where InitiatingProcessFileName in~ (UACBypassBinaries)\n| where FileName in~ (\"cmd.exe\", \"powershell.exe\", \"pwsh.exe\", \"mshta.exe\", \"rundll32.exe\", \"regsvr32.exe\")\n| project Timestamp, DeviceName, AccountName, InitiatingProcessFileName, FileName, ProcessCommandLine\n| sort by Timestamp desc",
     "tags": [
       "privilege-escalation",
-      "defense-evasion",
       "uac-bypass",
       "elevation",
       "windows"
@@ -2113,7 +2111,7 @@
     "description": "Detects registry modifications that disable Windows security features including Windows Firewall, AMSI (Antimalware Scan Interface), Script Block Logging, and UAC. These changes weaken endpoint defenses and facilitate payload execution.",
     "kql": "DeviceRegistryEvents\n| where Timestamp > ago(1d)\n| where ActionType == \"RegistryValueSet\"\n| where (\n    (RegistryKey has \"EnableFirewall\" and RegistryValueData == \"0\")\n    or (RegistryKey has \"DisableAntiSpyware\" and RegistryValueData == \"1\")\n    or (RegistryKey has \"AmsiEnable\" and RegistryValueData == \"0\")\n    or (RegistryKey has \"EnableScriptBlockLogging\" and RegistryValueData == \"0\")\n    or (RegistryKey has \"EnableLUA\" and RegistryValueData == \"0\")\n    or (RegistryKey has \"ConsentPromptBehaviorAdmin\" and RegistryValueData == \"0\")\n)\n| project Timestamp, DeviceName, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessFileName, InitiatingProcessAccountName\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
+      "defense-impairment",
       "registry-modification",
       "firewall",
       "amsi",
@@ -2293,7 +2291,6 @@
     "description": "Detects usage of attrib.exe to set the hidden (+h) or system (+s) attribute on files or directories. Adversaries hide malicious files and staging directories from users and basic file enumeration by applying hidden attributes.",
     "kql": "DeviceProcessEvents\n| where Timestamp > ago(1d)\n| where FileName =~ \"attrib.exe\"\n| where ProcessCommandLine has \"+h\" or ProcessCommandLine has \"+s\"\n| where ProcessCommandLine !has \"C:\\\\Windows\\\\\"\n| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n| sort by Timestamp desc",
     "tags": [
-      "defense-evasion",
       "hidden-files",
       "attrib",
       "stealth",
@@ -2561,10 +2558,14 @@
   {
     "mapping_id": "KQL-T1111-001",
     "technique_id": "T1111",
-    "additional_technique_ids": ["T1539"],
+    "additional_technique_ids": [
+      "T1539"
+    ],
     "product": "Microsoft Sentinel",
     "data_connector": "Microsoft Entra ID",
-    "log_sources": ["SigninLogs"],
+    "log_sources": [
+      "SigninLogs"
+    ],
     "query_type": "detection",
     "severity": "high",
     "title": "AiTM Token Compromise — anomale Session-Token-Nutzung über Geo/IP-Sprünge",
@@ -2593,10 +2594,14 @@
   {
     "mapping_id": "KQL-T1557.001-001",
     "technique_id": "T1557.001",
-    "additional_technique_ids": ["T1550.002"],
+    "additional_technique_ids": [
+      "T1550.002"
+    ],
     "product": "Defender XDR",
     "data_connector": "Microsoft Defender for Endpoint",
-    "log_sources": ["DeviceLogonEvents"],
+    "log_sources": [
+      "DeviceLogonEvents"
+    ],
     "query_type": "hunting",
     "severity": "high",
     "title": "NTLM Relay / Pass-the-Hash — Lateral Movement über mehrere Ziele (CVE-2026-32202)",
@@ -2624,10 +2629,15 @@
   {
     "mapping_id": "KQL-T1557.001-002",
     "technique_id": "T1557.001",
-    "additional_technique_ids": ["T1539"],
+    "additional_technique_ids": [
+      "T1539"
+    ],
     "product": "Microsoft Sentinel",
     "data_connector": "Microsoft Entra ID",
-    "log_sources": ["SigninLogs", "AADNonInteractiveUserSignInLogs"],
+    "log_sources": [
+      "SigninLogs",
+      "AADNonInteractiveUserSignInLogs"
+    ],
     "query_type": "detection",
     "severity": "high",
     "title": "AiTM Token Theft via Phishing Proxy — Token-Replay über mehrere IPs/Locations (15m-Fenster)",
@@ -2659,7 +2669,9 @@
     "technique_id": "T1068",
     "product": "Defender XDR",
     "data_connector": "Microsoft Defender for Endpoint",
-    "log_sources": ["DeviceProcessEvents"],
+    "log_sources": [
+      "DeviceProcessEvents"
+    ],
     "query_type": "hunting",
     "severity": "high",
     "title": "Linux Privilege Escalation Post-Exploit (CVE-2026-31431) — cp --no-preserve auf Azure Linux VMs/AKS",

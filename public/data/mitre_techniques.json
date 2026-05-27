@@ -219,7 +219,7 @@
     "name": "Direct Volume Access",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Network Devices",
@@ -329,7 +329,7 @@
     "name": "Rootkit",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -599,7 +599,7 @@
     "name": "Obfuscated Files or Information",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -617,7 +617,7 @@
     "name": "Binary Padding",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -633,7 +633,7 @@
     "name": "Software Packing",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -649,7 +649,7 @@
     "name": "Steganography",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -665,7 +665,7 @@
     "name": "Compile After Delivery",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -681,7 +681,7 @@
     "name": "Indicator Removal from Tools",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -697,7 +697,7 @@
     "name": "HTML Smuggling",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -713,7 +713,7 @@
     "name": "Dynamic API Resolution",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -727,7 +727,7 @@
     "name": "Stripped Payloads",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -744,7 +744,7 @@
     "name": "Embedded Payloads",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -760,7 +760,7 @@
     "name": "Command Obfuscation",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -776,7 +776,7 @@
     "name": "Fileless Storage",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -791,7 +791,7 @@
     "name": "LNK Icon Smuggling",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -805,7 +805,7 @@
     "name": "Encrypted/Encoded File",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -821,7 +821,7 @@
     "name": "Polymorphic Code",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -837,7 +837,7 @@
     "name": "Compression",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -853,7 +853,7 @@
     "name": "Junk Code Insertion",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -869,7 +869,7 @@
     "name": "SVG Smuggling",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -885,7 +885,7 @@
     "name": "Invisible Unicode",
     "parent_id": "T1027",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -951,7 +951,7 @@
     "name": "Masquerading",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Containers",
@@ -969,7 +969,7 @@
     "name": "Invalid Code Signature",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "macOS",
@@ -984,7 +984,7 @@
     "name": "Right-to-Left Override",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -1000,7 +1000,7 @@
     "name": "Rename Legitimate Utilities",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -1016,7 +1016,7 @@
     "name": "Masquerade Task or Service",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -1032,7 +1032,7 @@
     "name": "Match Legitimate Resource Name or Location",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Containers",
@@ -1050,7 +1050,7 @@
     "name": "Space after Filename",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -1065,7 +1065,7 @@
     "name": "Double File Extension",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -1079,7 +1079,7 @@
     "name": "Masquerade File Type",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -1095,7 +1095,7 @@
     "name": "Break Process Trees",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -1110,7 +1110,7 @@
     "name": "Masquerade Account Name",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Containers",
@@ -1131,7 +1131,7 @@
     "name": "Overwrite Process Arguments",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux"
@@ -1145,7 +1145,7 @@
     "name": "Browser Fingerprint",
     "parent_id": "T1036",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -1572,7 +1572,7 @@
     "name": "Process Injection",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1589,7 +1589,7 @@
     "name": "Dynamic-link Library Injection",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1604,7 +1604,7 @@
     "name": "Portable Executable Injection",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1619,7 +1619,7 @@
     "name": "Thread Execution Hijacking",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1634,7 +1634,7 @@
     "name": "Asynchronous Procedure Call",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1649,7 +1649,7 @@
     "name": "Thread Local Storage",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1664,7 +1664,7 @@
     "name": "Ptrace System Calls",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1679,7 +1679,7 @@
     "name": "Proc Memory",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1694,7 +1694,7 @@
     "name": "Extra Window Memory Injection",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1709,7 +1709,7 @@
     "name": "Process Hollowing",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1724,7 +1724,7 @@
     "name": "Process Doppelgänging",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1739,7 +1739,7 @@
     "name": "VDSO Hijacking",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -1754,7 +1754,7 @@
     "name": "ListPlanting",
     "parent_id": "T1055",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -2182,7 +2182,7 @@
     "name": "Indicator Removal",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Containers",
@@ -2202,7 +2202,7 @@
     "name": "Clear Command History",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -2220,7 +2220,7 @@
     "name": "File Deletion",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -2237,7 +2237,7 @@
     "name": "Network Share Connection Removal",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -2251,7 +2251,7 @@
     "name": "Timestomp",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -2268,7 +2268,7 @@
     "name": "Clear Network Connection History and Configurations",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -2285,7 +2285,7 @@
     "name": "Clear Mailbox Data",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -2302,7 +2302,7 @@
     "name": "Clear Persistence",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -2319,7 +2319,7 @@
     "name": "Relocate Malware",
     "parent_id": "T1070",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -2514,7 +2514,7 @@
     "name": "Valid Accounts",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Privilege Escalation",
       "Initial Access"
@@ -2540,7 +2540,7 @@
     "name": "Default Accounts",
     "parent_id": "T1078",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Privilege Escalation",
       "Initial Access"
@@ -2566,7 +2566,7 @@
     "name": "Domain Accounts",
     "parent_id": "T1078",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Privilege Escalation",
       "Initial Access"
@@ -2586,7 +2586,7 @@
     "name": "Local Accounts",
     "parent_id": "T1078",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Privilege Escalation",
       "Initial Access"
@@ -2608,7 +2608,7 @@
     "name": "Cloud Accounts",
     "parent_id": "T1078",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Privilege Escalation",
       "Initial Access"
@@ -3295,7 +3295,7 @@
     "name": "Modify Registry",
     "parent_id": null,
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence"
     ],
     "platforms": [
@@ -3490,7 +3490,7 @@
     "name": "Trusted Developer Utilities Proxy Execution",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -3505,7 +3505,7 @@
     "name": "MSBuild",
     "parent_id": "T1127",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -3520,7 +3520,7 @@
     "name": "ClickOnce",
     "parent_id": "T1127",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -3535,7 +3535,7 @@
     "name": "JamPlus",
     "parent_id": "T1127",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -3635,7 +3635,7 @@
     "name": "Access Token Manipulation",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -3650,7 +3650,7 @@
     "name": "Token Impersonation/Theft",
     "parent_id": "T1134",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -3665,7 +3665,7 @@
     "name": "Create Process with Token",
     "parent_id": "T1134",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -3680,7 +3680,7 @@
     "name": "Make and Impersonate Token",
     "parent_id": "T1134",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -3695,7 +3695,7 @@
     "name": "Parent PID Spoofing",
     "parent_id": "T1134",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -3710,7 +3710,7 @@
     "name": "SID-History Injection",
     "parent_id": "T1134",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -3921,7 +3921,7 @@
     "name": "Deobfuscate/Decode Files or Information",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -4116,7 +4116,7 @@
     "name": "BITS Jobs",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Execution"
     ],
@@ -4189,7 +4189,7 @@
     "name": "Indirect Command Execution",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4316,7 +4316,7 @@
     "name": "Traffic Signaling",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Command and Control"
     ],
@@ -4335,7 +4335,7 @@
     "name": "Port Knocking",
     "parent_id": "T1205",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Command and Control"
     ],
@@ -4354,7 +4354,7 @@
     "name": "Socket Filters",
     "parent_id": "T1205",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence",
       "Command and Control"
     ],
@@ -4372,7 +4372,7 @@
     "name": "Rogue Domain Controller",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -4403,7 +4403,7 @@
     "name": "Exploitation for Stealth",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -4547,7 +4547,7 @@
     "name": "System Script Proxy Execution",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4561,7 +4561,7 @@
     "name": "PubPrn",
     "parent_id": "T1216",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4575,7 +4575,7 @@
     "name": "SyncAppvPublishingServer",
     "parent_id": "T1216",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4605,7 +4605,7 @@
     "name": "System Binary Proxy Execution",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -4621,7 +4621,7 @@
     "name": "Compiled HTML File",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4635,7 +4635,7 @@
     "name": "Control Panel",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4649,7 +4649,7 @@
     "name": "CMSTP",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4663,7 +4663,7 @@
     "name": "InstallUtil",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4677,7 +4677,7 @@
     "name": "Mshta",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4691,7 +4691,7 @@
     "name": "Msiexec",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4705,7 +4705,7 @@
     "name": "Odbcconf",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4719,7 +4719,7 @@
     "name": "Regsvcs/Regasm",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4733,7 +4733,7 @@
     "name": "Regsvr32",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4747,7 +4747,7 @@
     "name": "Rundll32",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4761,7 +4761,7 @@
     "name": "Verclsid",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4775,7 +4775,7 @@
     "name": "Mavinject",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4789,7 +4789,7 @@
     "name": "MMC",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4803,7 +4803,7 @@
     "name": "Electron Applications",
     "parent_id": "T1218",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -4883,7 +4883,7 @@
     "name": "XSL Script Processing",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4897,7 +4897,7 @@
     "name": "Template Injection",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -4911,7 +4911,7 @@
     "name": "File and Directory Permissions Modification",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "ESXi",
@@ -4928,7 +4928,7 @@
     "name": "Windows Permissions",
     "parent_id": "T1222",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -4942,7 +4942,7 @@
     "name": "Linux and Mac Permissions",
     "parent_id": "T1222",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Linux",
@@ -4957,7 +4957,7 @@
     "name": "Execution Guardrails",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -4974,7 +4974,7 @@
     "name": "Environmental Keying",
     "parent_id": "T1480",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -4990,7 +4990,7 @@
     "name": "Mutual Exclusion",
     "parent_id": "T1480",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -5020,7 +5020,7 @@
     "name": "Domain or Tenant Policy Modification",
     "parent_id": null,
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -5036,7 +5036,7 @@
     "name": "Group Policy Modification",
     "parent_id": "T1484",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -5051,7 +5051,7 @@
     "name": "Trust Modification",
     "parent_id": "T1484",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Privilege Escalation"
     ],
     "platforms": [
@@ -5308,7 +5308,7 @@
     "name": "Virtualization/Sandbox Evasion",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Discovery"
     ],
     "platforms": [
@@ -5325,7 +5325,7 @@
     "name": "System Checks",
     "parent_id": "T1497",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Discovery"
     ],
     "platforms": [
@@ -5342,7 +5342,7 @@
     "name": "User Activity Based Checks",
     "parent_id": "T1497",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Discovery"
     ],
     "platforms": [
@@ -5359,7 +5359,7 @@
     "name": "Time Based Checks",
     "parent_id": "T1497",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Discovery"
     ],
     "platforms": [
@@ -5793,7 +5793,7 @@
     "name": "Unused/Unsupported Cloud Regions",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "IaaS"
@@ -5858,7 +5858,7 @@
     "name": "Pre-OS Boot",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence"
     ],
     "platforms": [
@@ -5876,7 +5876,7 @@
     "name": "System Firmware",
     "parent_id": "T1542",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence"
     ],
     "platforms": [
@@ -5892,7 +5892,7 @@
     "name": "Component Firmware",
     "parent_id": "T1542",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence"
     ],
     "platforms": [
@@ -5909,7 +5909,7 @@
     "name": "Bootkit",
     "parent_id": "T1542",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence"
     ],
     "platforms": [
@@ -5925,7 +5925,7 @@
     "name": "ROMMONkit",
     "parent_id": "T1542",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence"
     ],
     "platforms": [
@@ -5940,7 +5940,7 @@
     "name": "TFTP Boot",
     "parent_id": "T1542",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Persistence"
     ],
     "platforms": [
@@ -6906,7 +6906,7 @@
     "name": "Subvert Trust Controls",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Linux",
@@ -6922,7 +6922,7 @@
     "name": "Gatekeeper Bypass",
     "parent_id": "T1553",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "macOS"
@@ -6936,7 +6936,7 @@
     "name": "Code Signing",
     "parent_id": "T1553",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "macOS",
@@ -6951,7 +6951,7 @@
     "name": "SIP and Trust Provider Hijacking",
     "parent_id": "T1553",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -6965,7 +6965,7 @@
     "name": "Install Root Certificate",
     "parent_id": "T1553",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Linux",
@@ -6981,7 +6981,7 @@
     "name": "Mark-of-the-Web Bypass",
     "parent_id": "T1553",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -6995,7 +6995,7 @@
     "name": "Code Signing Policy Modification",
     "parent_id": "T1553",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "macOS",
@@ -7133,7 +7133,7 @@
     "name": "Modify Authentication Process",
     "parent_id": null,
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7156,7 +7156,7 @@
     "name": "Domain Controller Authentication",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7172,7 +7172,7 @@
     "name": "Password Filter DLL",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7188,7 +7188,7 @@
     "name": "Pluggable Authentication Modules",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7205,7 +7205,7 @@
     "name": "Network Device Authentication",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7221,7 +7221,7 @@
     "name": "Reversible Encryption",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7237,7 +7237,7 @@
     "name": "Multi-Factor Authentication",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7259,7 +7259,7 @@
     "name": "Hybrid Identity",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7279,7 +7279,7 @@
     "name": "Network Provider DLL",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7295,7 +7295,7 @@
     "name": "Conditional Access Policies",
     "parent_id": "T1556",
     "tactics": [
-      "defense-impairment",
+      "Defense Impairment",
       "Persistence",
       "Credential Access"
     ],
@@ -7699,7 +7699,7 @@
     "name": "Hide Artifacts",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -7717,7 +7717,7 @@
     "name": "Hidden Files and Directories",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -7733,7 +7733,7 @@
     "name": "Hidden Users",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -7749,7 +7749,7 @@
     "name": "Hidden Window",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -7765,7 +7765,7 @@
     "name": "NTFS File Attributes",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -7779,7 +7779,7 @@
     "name": "Hidden File System",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -7795,7 +7795,7 @@
     "name": "Run Virtual Instance",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "ESXi",
@@ -7812,7 +7812,7 @@
     "name": "VBA Stomping",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -7828,7 +7828,7 @@
     "name": "Email Hiding Rules",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows",
@@ -7845,7 +7845,7 @@
     "name": "Resource Forking",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "macOS"
@@ -7859,7 +7859,7 @@
     "name": "Process Argument Spoofing",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -7873,7 +7873,7 @@
     "name": "Ignore Process Interrupts",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -7889,7 +7889,7 @@
     "name": "File/Path Exclusions",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -7905,7 +7905,7 @@
     "name": "Bind Mounts",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux"
@@ -7919,7 +7919,7 @@
     "name": "Extended Attributes",
     "parent_id": "T1564",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -8405,7 +8405,7 @@
     "name": "Hijack Execution Flow",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8422,7 +8422,7 @@
     "name": "DLL",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8437,7 +8437,7 @@
     "name": "Dylib Hijacking",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8452,7 +8452,7 @@
     "name": "Executable Installer File Permissions Weakness",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8467,7 +8467,7 @@
     "name": "Dynamic Linker Hijacking",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8483,7 +8483,7 @@
     "name": "Path Interception by PATH Environment Variable",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8500,7 +8500,7 @@
     "name": "Path Interception by Search Order Hijacking",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8515,7 +8515,7 @@
     "name": "Path Interception by Unquoted Path",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8530,7 +8530,7 @@
     "name": "Services File Permissions Weakness",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8545,7 +8545,7 @@
     "name": "Services Registry Permissions Weakness",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8560,7 +8560,7 @@
     "name": "COR_PROFILER",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8575,7 +8575,7 @@
     "name": "KernelCallbackTable",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8590,7 +8590,7 @@
     "name": "AppDomainManager",
     "parent_id": "T1574",
     "tactics": [
-      "stealth",
+      "Stealth",
       "Execution"
     ],
     "platforms": [
@@ -8605,7 +8605,7 @@
     "name": "Modify Cloud Compute Infrastructure",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -8619,7 +8619,7 @@
     "name": "Create Snapshot",
     "parent_id": "T1578",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -8633,7 +8633,7 @@
     "name": "Create Cloud Instance",
     "parent_id": "T1578",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -8647,7 +8647,7 @@
     "name": "Delete Cloud Instance",
     "parent_id": "T1578",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -8661,7 +8661,7 @@
     "name": "Revert Cloud Instance",
     "parent_id": "T1578",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -8675,7 +8675,7 @@
     "name": "Modify Cloud Compute Configurations",
     "parent_id": "T1578",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -9865,7 +9865,7 @@
     "name": "Network Boundary Bridging",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -9879,7 +9879,7 @@
     "name": "Network Address Translation Traversal",
     "parent_id": "T1599",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -9893,7 +9893,7 @@
     "name": "Weaken Encryption",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -9907,7 +9907,7 @@
     "name": "Reduce Key Space",
     "parent_id": "T1600",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -9921,7 +9921,7 @@
     "name": "Disable Crypto Hardware",
     "parent_id": "T1600",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -9935,7 +9935,7 @@
     "name": "Modify System Image",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -9949,7 +9949,7 @@
     "name": "Patch System Image",
     "parent_id": "T1601",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -9963,7 +9963,7 @@
     "name": "Downgrade System Image",
     "parent_id": "T1601",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -10218,7 +10218,7 @@
     "name": "Build Image on Host",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Containers"
@@ -10307,7 +10307,7 @@
     "name": "Reflective Code Loading",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -10343,7 +10343,7 @@
     "name": "Debugger Evasion",
     "parent_id": null,
     "tactics": [
-      "stealth",
+      "Stealth",
       "Discovery"
     ],
     "platforms": [
@@ -10360,7 +10360,7 @@
     "name": "Plist File Modification",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "macOS"
@@ -10539,7 +10539,7 @@
     "name": "Modify Cloud Resource Hierarchy",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -10679,7 +10679,7 @@
     "name": "Delay Execution",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -10695,7 +10695,7 @@
     "name": "Selective Exclusion",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Windows"
@@ -10797,7 +10797,7 @@
     "name": "Social Engineering",
     "parent_id": null,
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -10815,7 +10815,7 @@
     "name": "Impersonation",
     "parent_id": "T1684",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -10833,7 +10833,7 @@
     "name": "Email Spoofing",
     "parent_id": "T1684",
     "tactics": [
-      "stealth"
+      "Stealth"
     ],
     "platforms": [
       "Linux",
@@ -10850,7 +10850,7 @@
     "name": "Disable or Modify Tools",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Containers",
@@ -10870,7 +10870,7 @@
     "name": "Disable or Modify Windows Event Log",
     "parent_id": "T1685",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -10884,7 +10884,7 @@
     "name": "Disable or Modify Cloud Log",
     "parent_id": "T1685",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS",
@@ -10901,7 +10901,7 @@
     "name": "Modify or Spoof Tool UI",
     "parent_id": "T1685",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Linux",
@@ -10917,7 +10917,7 @@
     "name": "Disable or Modify Linux Audit System Log",
     "parent_id": "T1685",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Linux"
@@ -10931,7 +10931,7 @@
     "name": "Clear Windows Event Logs",
     "parent_id": "T1685",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -10945,7 +10945,7 @@
     "name": "Clear Linux or Mac System Logs",
     "parent_id": "T1685",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Linux",
@@ -10960,7 +10960,7 @@
     "name": "Disable or Modify System Firewall",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "ESXi",
@@ -10978,7 +10978,7 @@
     "name": "Cloud Firewall",
     "parent_id": "T1686",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS"
@@ -10992,7 +10992,7 @@
     "name": "Network Device Firewall",
     "parent_id": "T1686",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Network Devices"
@@ -11006,7 +11006,7 @@
     "name": "Windows Host Firewall",
     "parent_id": "T1686",
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -11020,7 +11020,7 @@
     "name": "Exploitation for Defense Impairment",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "IaaS",
@@ -11038,7 +11038,7 @@
     "name": "Safe Mode Boot",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "Windows"
@@ -11052,7 +11052,7 @@
     "name": "Downgrade Attack",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "macOS",
@@ -11068,7 +11068,7 @@
     "name": "Prevent Command History Logging",
     "parent_id": null,
     "tactics": [
-      "defense-impairment"
+      "Defense Impairment"
     ],
     "platforms": [
       "ESXi",
