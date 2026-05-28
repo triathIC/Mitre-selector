@@ -34,29 +34,50 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
   );
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const topScrollRef = useRef<HTMLDivElement | null>(null);
   const [showRightFade, setShowRightFade] = useState(false);
+  const [matrixScrollWidth, setMatrixScrollWidth] = useState(0);
   const {
     handleMouseMove: handleTiltMouseMove,
     handleMouseLeave: handleTiltMouseLeave,
   } = useMatrixTilt({ containerRef: scrollRef });
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
+    const matrix = scrollRef.current;
+    const top = topScrollRef.current;
+    if (!matrix) return;
 
-    function checkScroll() {
-      if (!el) return;
-      const canScrollRight = el.scrollWidth - el.scrollLeft - el.clientWidth > 2;
+    function syncFromMatrix() {
+      if (!matrix) return;
+      if (top && top.scrollLeft !== matrix.scrollLeft) {
+        top.scrollLeft = matrix.scrollLeft;
+      }
+      const canScrollRight = matrix.scrollWidth - matrix.scrollLeft - matrix.clientWidth > 2;
       setShowRightFade(canScrollRight);
     }
 
-    checkScroll();
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    const observer = new ResizeObserver(checkScroll);
-    observer.observe(el);
+    function syncFromTop() {
+      if (!matrix || !top) return;
+      if (matrix.scrollLeft !== top.scrollLeft) {
+        matrix.scrollLeft = top.scrollLeft;
+      }
+    }
+
+    function updateWidth() {
+      if (!matrix) return;
+      setMatrixScrollWidth(matrix.scrollWidth);
+      syncFromMatrix();
+    }
+
+    updateWidth();
+    matrix.addEventListener("scroll", syncFromMatrix, { passive: true });
+    top?.addEventListener("scroll", syncFromTop, { passive: true });
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(matrix);
 
     return () => {
-      el.removeEventListener("scroll", checkScroll);
+      matrix.removeEventListener("scroll", syncFromMatrix);
+      top?.removeEventListener("scroll", syncFromTop);
       observer.disconnect();
     };
   }, []);
@@ -112,10 +133,19 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
 
       {/* Desktop / tablet: full scrollable matrix with fade hint */}
       <div className="relative hidden h-full md:flex md:flex-col">
+        {/* Sticky synced scrollbar above the matrix so users don't have to
+            look at the bottom of the area to scroll horizontally. */}
+        <div
+          ref={topScrollRef}
+          className="overflow-x-scroll overflow-y-hidden border-b border-white/10 bg-surface-elevated"
+          aria-hidden="true"
+        >
+          <div style={{ width: matrixScrollWidth, height: 1 }} />
+        </div>
         <div
           ref={scrollRef}
           data-matrix-scroll
-          className="flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden"
+          className="scrollbar-hide flex min-h-0 flex-1 overflow-x-scroll overflow-y-hidden"
           role="grid"
           aria-label="MITRE ATT&CK matrix"
           onMouseMove={handleTiltMouseMove}

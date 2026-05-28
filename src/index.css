@@ -23,3 +23,12 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* Hide native scrollbar on the matrix scroll container so the synced
+   sticky scrollbar at the top of the matrix is the only one visible. */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
