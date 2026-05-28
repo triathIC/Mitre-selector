@@ -120,7 +120,7 @@ function AppContent() {
       <Header dataStore={dataStore} />
       <FilterBar />
       <div className="flex flex-1 overflow-hidden">
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto md:overflow-hidden">
           <ErrorBoundary>
             <ClientOnly>
               {() => <MatrixView dataStore={dataStore} />}

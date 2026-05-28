@@ -111,11 +111,11 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
       </div>
 
       {/* Desktop / tablet: full scrollable matrix with fade hint */}
-      <div className="relative hidden md:block">
+      <div className="relative hidden h-full md:flex md:flex-col">
         <div
           ref={scrollRef}
           data-matrix-scroll
-          className="flex overflow-x-auto overflow-y-hidden"
+          className="flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden"
           role="grid"
           aria-label="MITRE ATT&CK matrix"
           onMouseMove={handleTiltMouseMove}

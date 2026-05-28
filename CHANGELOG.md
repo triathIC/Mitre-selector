@@ -7,6 +7,10 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
+### Fixed
+
+- Matrix horizontal scrollbar is now always visible at the bottom of the matrix area, directly above the footer, instead of only appearing after scrolling the page down to the end of the tallest tactic column. Root cause was a missing height chain between `<main>` and the scroll container in `MatrixView`: the scroll container had no constrained height, so its width-scrollbar lived at the foot of the natural content height (= tallest column). Fix is three Tailwind class adjustments — `main` becomes `md:overflow-hidden` on desktop, the matrix wrapper gets `h-full md:flex md:flex-col`, and the scroll container gets `flex-1 min-h-0`. This also activates the per-column `overflow-y-auto` in `TacticColumn`, so long columns (Persistence, Discovery) scroll internally without affecting the others.
+
 ### Changed
 
 - `npm run lint` is now green from a clean checkout. ESLint ignores include `dist-node` (build artifact), and `tsconfig.node.json` now includes `scripts/**/*.ts` so the typescript-eslint parser project covers the maintenance scripts. `scripts/generate-mitre-data.ts` was refactored to satisfy strict rules: `PLATFORM_MAP` / `TACTIC_MAP` are `Map<string,string>` (no object-injection warnings) and the two non-null assertions on `getExternalId` / `phase_name` were replaced by explicit guards + a type-predicate filter. Output is byte-identical to before the refactor.
