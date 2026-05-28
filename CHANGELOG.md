@@ -7,6 +7,10 @@ sections below mirror the commit history.
 
 ## [Unreleased]
 
+### Added
+
+- Drag-to-scroll on the matrix via a new `useDragScroll` hook (`src/hooks/useDragScroll.ts`). Press-and-drag with the left mouse button anywhere in the matrix area scrolls horizontally; movement under a 5 px threshold is treated as a click so `TechniqueCell` clicks still open the detail panel. Clicks on interactive descendants (buttons, links, inputs) never start a drag. The cursor switches from `grab` to `grabbing` while dragging.
+
 ### Fixed
 
 - Horizontal scrolling of the matrix is now driven by a **sticky scrollbar at the top of the matrix area** (directly under the FilterBar), so users don't have to look at the bottom edge to scroll right. A small synced `<div>` above the matrix renders the scrollbar; its width tracks the matrix's `scrollWidth` via `ResizeObserver`, and a guarded bidirectional `scrollLeft` sync keeps the top control and the actual matrix container in lockstep. The matrix container's native scrollbar is hidden via a new `.scrollbar-hide` utility in `src/index.css` so only the sticky one is visible.

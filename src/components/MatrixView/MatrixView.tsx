@@ -4,6 +4,7 @@ import type { DataStore, MitreTactic } from "@/core/models";
 import { useFilteredData } from "@/hooks/useFilteredData";
 import { useAppContext } from "@/context/useAppContext";
 import { useMatrixTilt } from "@/hooks/useMatrixTilt";
+import { useDragScroll } from "@/hooks/useDragScroll";
 import { useSearchAnalytics } from "@/hooks/useSearchAnalytics";
 import { TacticColumn } from "./TacticColumn";
 
@@ -41,6 +42,7 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
     handleMouseMove: handleTiltMouseMove,
     handleMouseLeave: handleTiltMouseLeave,
   } = useMatrixTilt({ containerRef: scrollRef });
+  useDragScroll(scrollRef);
 
   useEffect(() => {
     const matrix = scrollRef.current;
@@ -145,7 +147,7 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
         <div
           ref={scrollRef}
           data-matrix-scroll
-          className="scrollbar-hide flex min-h-0 flex-1 overflow-x-scroll overflow-y-hidden"
+          className="scrollbar-hide flex min-h-0 flex-1 cursor-grab overflow-x-scroll overflow-y-hidden"
           role="grid"
           aria-label="MITRE ATT&CK matrix"
           onMouseMove={handleTiltMouseMove}
