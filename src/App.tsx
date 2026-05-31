@@ -1,156 +1,32 @@
-import { Component, lazy, Suspense, useEffect, useMemo } from "react";
-import { useParams } from "react-router-dom";
-import { ClientOnly } from "vite-react-ssg";
+import { Outlet, useMatch, useParams } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AppProvider } from "@/context/AppContext";
 import { useAppContext } from "@/context/useAppContext";
 import { Header, Footer } from "@/components/Layout";
-import { FilterBar } from "@/components/FilterBar";
-import { MatrixView } from "@/components/MatrixView";
-import { Seo, MAX_TOP_TECHNIQUES, type SeoTopTechnique } from "@/components/Seo";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { ConsentBanner } from "@/components/ConsentBanner";
-import type { DataStore } from "@/core/models";
 
-const DetailPanel = lazy(() =>
-  import("@/components/DetailPanel").then((m) => ({ default: m.DetailPanel }))
-);
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error?: Error;
-}
-
-class ErrorBoundary extends Component<
-  { children: React.ReactNode; fallback?: React.ReactNode },
-  ErrorBoundaryState
-> {
-  state: ErrorBoundaryState = { hasError: false };
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
-  }
-
-  render(): React.ReactNode {
-    if (this.state.hasError) {
-      return (
-        this.props.fallback ?? (
-          <div className="rounded border border-red-500/50 bg-red-500/10 p-4 text-red-400 text-sm">
-            Something went wrong.
-          </div>
-        )
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function pickTopTechniques(dataStore: DataStore): SeoTopTechnique[] {
-  const entries: Array<{ id: string; name: string; count: number }> = [];
-  for (const [id, mappings] of dataStore.mappingsByTechnique) {
-    if (mappings.length === 0) continue;
-    const technique = dataStore.techniques.get(id);
-    if (technique === undefined) continue;
-    entries.push({ id, name: technique.name, count: mappings.length });
-  }
-  entries.sort((a, b) => (b.count - a.count) || a.id.localeCompare(b.id));
-  return entries.slice(0, MAX_TOP_TECHNIQUES).map(({ id, name }) => ({ id, name }));
-}
-
-function AppContent() {
-  const { state, selectTechnique, setFilter } = useAppContext();
-  const params = useParams<{ id: string }>();
-  const idFromUrl = params.id ?? null;
-
-  useEffect(() => {
-    if (idFromUrl !== state.selectedTechniqueId) {
-      selectTechnique(idFromUrl);
-    }
-  }, [idFromUrl, selectTechnique, state.selectedTechniqueId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const q = new URLSearchParams(window.location.search).get("q");
-    if (q !== null && q.length > 0) {
-      setFilter({ searchQuery: q });
-    }
-  }, [setFilter]);
-
-  const seoTopTechniques = useMemo<SeoTopTechnique[]>(
-    () => (idFromUrl || state.dataStore === null ? [] : pickTopTechniques(state.dataStore)),
-    [idFromUrl, state.dataStore]
-  );
-
-  if (state.error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface p-4">
-        <div className="max-w-md text-center text-red-400">
-          <p className="font-medium">Failed to load data</p>
-          <p className="mt-2 text-sm">{state.error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!state.dataStore) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface p-4">
-        <div className="max-w-md text-center text-red-400">
-          <p className="font-medium">App state is invalid</p>
-          <p className="mt-2 text-sm">Data store is missing.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const dataStore = state.dataStore;
-  const seoTechnique = idFromUrl ? dataStore.techniques.get(idFromUrl) : undefined;
-  const seoMappings = idFromUrl
-    ? dataStore.mappingsByTechnique.get(idFromUrl) ?? []
-    : [];
+function Chrome() {
+  const { state } = useAppContext();
+  const matrixMatch = useMatch("/matrix");
+  const techniqueMatch = useMatch("/technique/:id");
+  const showStats = Boolean(matrixMatch || techniqueMatch);
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-gray-200">
-      <Seo
-        technique={seoTechnique}
-        mappings={seoMappings}
-        topTechniques={seoTopTechniques}
-      />
-      <Header dataStore={dataStore} />
-      <FilterBar />
-      <div className="flex flex-1 overflow-hidden">
-        <main className="flex-1 overflow-auto md:overflow-hidden">
-          <ErrorBoundary>
-            <ClientOnly>
-              {() => <MatrixView dataStore={dataStore} />}
-            </ClientOnly>
-          </ErrorBoundary>
-        </main>
-        {state.selectedTechniqueId && (
-          <ErrorBoundary fallback={<div className="p-4 text-red-400">Detail panel error.</div>}>
-            <Suspense
-              fallback={
-                <div className="flex w-[576px] items-center justify-center border-l border-white/10 bg-surface-elevated text-gray-500">
-                  Loading…
-                </div>
-              }
-            >
-              <DetailPanel dataStore={dataStore} />
-            </Suspense>
-          </ErrorBoundary>
-        )}
-      </div>
+      <Header dataStore={state.dataStore} showStats={showStats} />
+      <Outlet />
       <Footer />
     </div>
   );
 }
 
-function Layout() {
+function RootLayout() {
   const params = useParams<{ id: string }>();
   return (
     <AppProvider initialSelectedTechniqueId={params.id ?? null}>
-      <AppContent />
+      <Chrome />
       <Analytics />
       <SpeedInsights />
       <GoogleAnalytics />
@@ -159,4 +35,4 @@ function Layout() {
   );
 }
 
-export default Layout;
+export default RootLayout;

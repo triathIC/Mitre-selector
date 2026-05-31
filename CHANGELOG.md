@@ -9,6 +9,10 @@ sections below mirror the commit history.
 
 ### Added
 
+- **Scenario layer v1**: new landing route `/` shows a Scenario Library, with detail pages at `/scenario/:scenarioId` rendering kill chain + correlation + blind spots. Scenarios are static JSON in `src/data/scenarios/*.json`, auto-discovered via `import.meta.glob`, so adding a JSON file requires zero code changes. First scenario shipped: `scenario-trigona-3h.json` (DFIR Report — Trigona ransomware in 3 hours, 6 kill-chain steps, 17 ATT&CK techniques). New components in `src/components/scenario/`: `MaturityBadge` (4-segment honest-maturity indicator: theorized / static-reviewed / lab-tested / field-observed), `ScenarioCard`, `StepCard` (timeline rail, tactic chip, KQL detection block with FP/FN notes), `CorrelationBlock` (accent-bordered hero section: linking entity, time window, sequence flow, narrative, architect note). Detection KQL rendering looks up `detection.kqlId` against the existing `mappingsByTechnique` store and falls back to `detection.kqlDraft` joined with newlines.
+- Canonical design tokens in `src/index.css` (`--bg`, `--text`, `--accent`, `--m-theorized/static/lab/field`, etc.) exposed as Tailwind utilities under the `scn-*` namespace via `tailwind.config.js`. Archivo registered as `font-display` (Google Fonts link in `index.html`) for scenario headings; existing matrix UI keeps DM Sans.
+- Secondary navigation in `Header`: Scenarios / Matrix / KQL Library (the last links to `/matrix?hasKql=true`). Matrix stats line is now gated to matrix routes only via `useMatch`.
+- New route `/matrix` (matrix landing page) alongside the existing `/technique/:id` (preserved unchanged so all 691 static SEO pages still generate). `MatrixPage` reads `?q=` and `?hasKql=true` URL params on mount and applies them to the filter state.
 - Drag-to-scroll on the matrix via a new `useDragScroll` hook (`src/hooks/useDragScroll.ts`). Press-and-drag with the left mouse button anywhere in the matrix area scrolls horizontally; movement under a 5 px threshold is treated as a click so `TechniqueCell` clicks still open the detail panel. Clicks on interactive descendants (buttons, links, inputs) never start a drag. The cursor switches from `grab` to `grabbing` while dragging.
 
 ### Fixed
@@ -18,6 +22,7 @@ sections below mirror the commit history.
 
 ### Changed
 
+- `src/App.tsx` refactored from a matrix-only `Layout` into a thin `RootLayout` (`AppProvider` + Vercel `Analytics` + `SpeedInsights` + `GoogleAnalytics` + `ConsentBanner` + `Header` + `<Outlet />` + `Footer`). All matrix-specific shell (`FilterBar`, `MatrixView`, `DetailPanel`, URL→technique sync, `<Seo>`, top-techniques computation, the matrix-local `ErrorBoundary`) moved into a new `src/pages/MatrixPage.tsx`. The `Seo` home-variant canonical URL changed from `${SITE_URL}/` to `${SITE_URL}/matrix` (and the matching `SearchAction.urlTemplate`) since `/` now serves Scenarios; `/technique/:id` canonical is unchanged so existing SEO is preserved.
 - `npm run lint` is now green from a clean checkout. ESLint ignores include `dist-node` (build artifact), and `tsconfig.node.json` now includes `scripts/**/*.ts` so the typescript-eslint parser project covers the maintenance scripts. `scripts/generate-mitre-data.ts` was refactored to satisfy strict rules: `PLATFORM_MAP` / `TACTIC_MAP` are `Map<string,string>` (no object-injection warnings) and the two non-null assertions on `getExternalId` / `phase_name` were replaced by explicit guards + a type-predicate filter. Output is byte-identical to before the refactor.
 
 ### Removed
