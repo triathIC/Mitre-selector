@@ -77,7 +77,7 @@ export function Seo({ technique, mappings = [], topTechniques = [] }: SeoProps) 
         "@type": "SearchAction",
         target: {
           "@type": "EntryPoint",
-          urlTemplate: `${SITE_URL}/?q={search_term_string}`,
+          urlTemplate: `${SITE_URL}/matrix?q={search_term_string}`,
         },
         "query-input": "required name=search_term_string",
       },
@@ -105,10 +105,10 @@ export function Seo({ technique, mappings = [], topTechniques = [] }: SeoProps) 
         <meta charSet="UTF-8" />
         <title>{DEFAULT_TITLE}</title>
         <meta name="description" content={DEFAULT_DESCRIPTION} />
-        <link rel="canonical" href={`${SITE_URL}/`} />
+        <link rel="canonical" href={`${SITE_URL}/matrix`} />
         <meta property="og:title" content={DEFAULT_TITLE} />
         <meta property="og:description" content={DEFAULT_DESCRIPTION} />
-        <meta property="og:url" content={`${SITE_URL}/`} />
+        <meta property="og:url" content={`${SITE_URL}/matrix`} />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content={SITE_NAME} />
         <meta property="og:image" content={OG_IMAGE} />

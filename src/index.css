@@ -3,6 +3,25 @@
 @tailwind utilities;
 
 :root {
+  /* canonical design tokens (scenario layer + shared system) */
+  --bg: #0a0d12;
+  --bg-2: #10141c;
+  --bg-3: #161c27;
+  --raised: #1a212e;
+  --border: #222b39;
+  --border-2: #2f3a4c;
+  --text: #e7eaf0;
+  --dim: #98a2b2;
+  --faint: #5d6675;
+  --accent: #ff4d4d;
+  --accent-soft: rgba(255, 77, 77, 0.1);
+  --accent-line: rgba(255, 77, 77, 0.38);
+  --tactic: #d9a441;
+  --m-theorized: #6b7280;
+  --m-static: #4f8cff;
+  --m-lab: #2dd4bf;
+  --m-field: #4ade80;
+
   font-family: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -31,4 +50,21 @@ body {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Scenario layer: single tasteful staggered reveal; honors prefers-reduced-motion */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes scn-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .scn-reveal {
+    animation: scn-fade-in 360ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
 }
