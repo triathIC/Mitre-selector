@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MitreTechnique } from "@/core/models";
+import type { MitreTechnique } from "@triathic/mke-core";
 import { Button } from "@/components/ui";
 import { trackExternalClick } from "@/lib/analytics";
 

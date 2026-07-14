@@ -52,15 +52,15 @@ jobs:
           set -euo pipefail
 
           if node -e "const fs=require('fs'); const c=fs.readFileSync('eslint.config.js','utf8'); process.exit(/security\/detect-object-injection/.test(c) ? 0 : 1)"; then
-            echo "Security rules found in eslint.config.js - linting src/ with project config"
-            npx eslint src/ --ext .ts,.tsx
+            echo "Security rules found in eslint.config.js - linting src/ and packages/mke-core/src/ with project config"
+            npx eslint src/ packages/mke-core/src/ --ext .ts,.tsx
           else
             echo "Security rules missing in eslint.config.js - running fallback command"
             if ! npm ls eslint-plugin-security >/dev/null 2>&1; then
               npm install --save-dev eslint-plugin-security
             fi
 
-            npx eslint src/ --ext .ts,.tsx --plugin security --rule '{"security/detect-object-injection":"warn","security/detect-non-literal-regexp":"warn","security/detect-unsafe-regex":"warn","security/detect-buffer-noassert":"error","security/detect-eval-with-expression":"error","security/detect-no-csrf-before-method-override":"error","security/detect-possible-timing-attacks":"warn"}'
+            npx eslint src/ packages/mke-core/src/ --ext .ts,.tsx --plugin security --rule '{"security/detect-object-injection":"warn","security/detect-non-literal-regexp":"warn","security/detect-unsafe-regex":"warn","security/detect-buffer-noassert":"error","security/detect-eval-with-expression":"error","security/detect-no-csrf-before-method-override":"error","security/detect-possible-timing-attacks":"warn"}'
           fi
 
   secret-scan:
@@ -77,7 +77,7 @@ jobs:
 
           FOUND=0
           SCAN_DIRS=()
-          for dir in src data scripts; do
+          for dir in src data scripts packages; do
             if [ -d "$dir" ]; then
               SCAN_DIRS+=("$dir")
             fi

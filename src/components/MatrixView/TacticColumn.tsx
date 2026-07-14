@@ -1,4 +1,4 @@
-import type { DataStore, MitreTactic, MitreTechnique } from "@/core/models";
+import type { DataStore, MitreTactic, MitreTechnique } from "@triathic/mke-core";
 import { TechniqueCell } from "./TechniqueCell";
 
 export interface TacticColumnProps {

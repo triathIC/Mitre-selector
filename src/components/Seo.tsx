@@ -1,5 +1,5 @@
 import { Head } from "vite-react-ssg";
-import type { KqlMapping, MitreTechnique } from "@/core/models";
+import type { KqlMapping, MitreTechnique } from "@triathic/mke-core";
 
 const SITE_NAME = "MITRE ATT&CK KQL Explorer";
 const SITE_URL = "https://mitre.triath.xyz";

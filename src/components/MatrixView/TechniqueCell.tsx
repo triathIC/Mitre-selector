@@ -1,6 +1,6 @@
 import { memo, useCallback, useState } from "react";
 import type { CSSProperties } from "react";
-import type { MitreTechnique } from "@/core/models";
+import type { MitreTechnique } from "@triathic/mke-core";
 
 export interface TechniqueCellProps {
   technique: MitreTechnique;

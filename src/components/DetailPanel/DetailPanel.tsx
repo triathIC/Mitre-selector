@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { DataStore, KqlMapping } from "@/core/models";
+import type { DataStore, KqlMapping } from "@triathic/mke-core";
 import { useAppContext } from "@/context/useAppContext";
 import { TechniqueHeader } from "./TechniqueHeader";
 import { KqlCard } from "./KqlCard";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { SEVERITY_ORDER } from "@/core/constants";
-import { buildContributionUrl } from "@/core/utils/github";
+import { SEVERITY_ORDER, buildContributionUrl } from "@triathic/mke-core";
 import { trackEvent, trackExternalClick } from "@/lib/analytics";
 
 export interface DetailPanelProps {

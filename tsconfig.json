@@ -26,5 +26,8 @@
   },
   "include": ["src"],
   "exclude": ["scripts/**"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [
+    { "path": "./tsconfig.node.json" },
+    { "path": "./packages/mke-core" }
+  ]
 }

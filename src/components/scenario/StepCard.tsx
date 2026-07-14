@@ -1,4 +1,4 @@
-import type { KillChainStep } from "@/types/scenario";
+import type { KillChainStep } from "@triathic/mke-core";
 import { useAppContext } from "@/context/useAppContext";
 import { MaturityBadge } from "./MaturityBadge";
 import { findMappingByKqlId } from "./utils";

@@ -1,4 +1,4 @@
-import type { Scenario } from "@/types/scenario";
+import type { Scenario } from "@triathic/mke-core";
 
 const modules = import.meta.glob<{ default: Scenario }>("./*.json", {
   eager: true,

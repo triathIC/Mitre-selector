@@ -1,0 +1,36 @@
+{
+  "name": "@triathic/mke-core",
+  "version": "0.1.0",
+  "description": "Framework-agnostic core of the MITRE KQL Explorer: ATT&CK v19 types and tactic surface, KQL-mapping schema types and validators, scenario-layer types, and pure data transforms.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepare": "npm run build",
+    "prepack": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/triathIC/Mitre-selector.git",
+    "directory": "packages/mke-core"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.2"
+  }
+}

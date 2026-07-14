@@ -1,7 +1,7 @@
-import type { KqlMapping } from "@/core/models";
+import type { KqlMapping } from "@triathic/mke-core";
 import { Badge } from "@/components/ui";
 import { KqlCodeBlock } from "./KqlCodeBlock";
-import { SEVERITY_COLORS, CONFIDENCE_COLORS } from "@/core/constants";
+import { SEVERITY_COLORS, CONFIDENCE_COLORS } from "@triathic/mke-core";
 import { trackExternalClick } from "@/lib/analytics";
 
 export interface KqlCardProps {

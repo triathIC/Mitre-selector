@@ -1,4 +1,4 @@
-import type { DataStore, KqlMapping } from "@/core/models";
+import type { DataStore, KqlMapping } from "@triathic/mke-core";
 
 export function findMappingByKqlId(
   store: DataStore | null,

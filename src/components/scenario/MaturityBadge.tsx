@@ -1,4 +1,4 @@
-import type { MaturityLevel } from "@/types/scenario";
+import type { MaturityLevel } from "@triathic/mke-core";
 
 export interface MaturityBadgeProps {
   level: MaturityLevel;

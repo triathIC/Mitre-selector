@@ -2,8 +2,13 @@
   "name": "mitre-kql-explorer",
   "private": true,
   "version": "0.3.0",
+  "license": "MIT",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
+    "predev": "tsc -b packages/mke-core",
     "dev": "vite",
     "build": "tsc -b && vite-react-ssg build && tsx scripts/generate-sitemap.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -13,6 +18,7 @@
     "test:bundle": "tsx scripts/check-mitre-bundle.ts"
   },
   "dependencies": {
+    "@triathic/mke-core": "0.1.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "react": "^18.3.1",
