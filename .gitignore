@@ -12,6 +12,8 @@ dist-node/
 
 # Obsidian PKM — nicht mit Repo syncen
 docs/PROJECT-DOCUMENTATION.md
+docs/ARCHITECTURE_HUB.md
+docs/architecture.md
 claude.md
 
 # Claude Code — lokal, nicht versioniert
