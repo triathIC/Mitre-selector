@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-import type { DataStore } from "@triathic/mke-core";
+import { Link, useLocation } from "react-router-dom";
+import type { DataStore } from "@/core/models";
 
 export interface HeaderProps {
   dataStore?: DataStore | null;
@@ -8,12 +8,12 @@ export interface HeaderProps {
 }
 
 const NAV = [
-  { to: "/", label: "Scenarios", end: true },
-  { to: "/matrix", label: "Matrix", end: true },
-  { to: "/matrix?hasKql=true", label: "KQL Library", end: false },
+  { to: "/", label: "Scenarios" },
+  { to: "/matrix", label: "Matrix" },
+  { to: "/matrix?hasKql=true", label: "KQL Library" },
 ] as const;
 
-function navLinkClass({ isActive }: { isActive: boolean }): string {
+function navLinkClass(isActive: boolean): string {
   const base =
     "rounded px-2 py-1 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-scn-accent";
   return isActive
@@ -22,6 +22,24 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
 }
 
 export function Header({ dataStore, showStats = false }: HeaderProps) {
+  // "KQL Library" is not its own route — it is /matrix?hasKql=true, so it
+  // shares a pathname with "Matrix". NavLink matches on pathname only, which
+  // would highlight both at once; discriminate on the query string instead so
+  // exactly one nav item is active at any time.
+  const location = useLocation();
+  const hasKqlFilter =
+    new URLSearchParams(location.search).get("hasKql") === "true";
+
+  function isNavActive(to: string): boolean {
+    if (to === "/matrix") {
+      return location.pathname === "/matrix" && !hasKqlFilter;
+    }
+    if (to === "/matrix?hasKql=true") {
+      return location.pathname === "/matrix" && hasKqlFilter;
+    }
+    return location.pathname === to;
+  }
+
   let statsText = "";
   if (showStats && dataStore) {
     const techniqueCount = dataStore.techniques.size;
@@ -41,11 +59,19 @@ export function Header({ dataStore, showStats = false }: HeaderProps) {
           MITRE ATT&CK KQL Explorer
         </h1>
         <nav aria-label="Primary" className="flex items-center gap-1">
-          {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className={navLinkClass}>
-              {item.label}
-            </NavLink>
-          ))}
+          {NAV.map((item) => {
+            const isActive = isNavActive(item.to);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={isActive ? "page" : undefined}
+                className={navLinkClass(isActive)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         {statsText && (
           <p className="ml-auto font-mono text-xs text-gray-500">{statsText}</p>

@@ -1,0 +1,58 @@
+# .github/workflows/drift-check.yml
+name: drift-check
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Montag 06:00 UTC
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  mechanical-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+
+      # 1. Mirror-Konsistenz (Open Point: kql_mappings doppelt)
+      - name: Mirror consistency
+        run: |
+          diff <(jq -S . public/data/kql_mappings.json) \
+               <(jq -S . data/kql_mappings.json) \
+            || echo "DRIFT::mirror::kql_mappings.json public vs data divergiert" >> drift.log
+
+      # 2. STIX-Manifest-Pin vs. Upstream-Release
+      - name: MITRE release drift
+        run: |
+          PINNED=$(jq -r '.version' data/mitre-manifest.json)
+          LATEST=$(curl -s https://api.github.com/repos/mitre-attack/attack-stix-data/releases/latest | jq -r '.tag_name')
+          [ "$PINNED" = "$LATEST" ] \
+            || echo "DRIFT::mitre::pinned=$PINNED upstream=$LATEST" >> drift.log
+
+      # 3. Verwaiste Artefakte (Open Point #7, #8)
+      - name: Orphan artifacts
+        run: |
+          git ls-files '*.DS_Store' | grep . \
+            && echo "DRIFT::hygiene::.DS_Store getrackt" >> drift.log || true
+          grep -rq "generate_kql_imports" package.json \
+            || echo "DRIFT::scripts::generate_kql_imports.py nicht in npm/CI" >> drift.log
+
+      # 4. defense-evasion-Regression (existierender check, hier als Drift-Signal)
+      - name: Legacy tactic guard
+        run: npx tsx scripts/check-mitre-bundle.ts || echo "DRIFT::tactic::check-mitre-bundle failed" >> drift.log
+
+      # 5. Issue erzeugen falls Findings (nur auf cron, nicht auf PR)
+      - name: Raise issue
+        if: github.event_name == 'schedule'
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          [ -s drift.log ] || exit 0
+          BODY=$(printf '## Mechanical drift\n\n```\n%s\n```\n\n_cc @drift-audit Routine — semantischer Abgleich fällig._' "$(cat drift.log)")
+          gh issue create --title "Drift detected $(date +%F)" \
+            --label "drift,maintenance" --body "$BODY"
