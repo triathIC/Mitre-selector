@@ -13,6 +13,7 @@ sections below mirror the commit history.
 - Canonical design tokens in `src/index.css` (`--bg`, `--text`, `--accent`, `--m-theorized/static/lab/field`, etc.) exposed as Tailwind utilities under the `scn-*` namespace via `tailwind.config.js`. Archivo registered as `font-display` (Google Fonts link in `index.html`) for scenario headings; existing matrix UI keeps DM Sans.
 - Secondary navigation in `Header`: Scenarios / Matrix / KQL Library (the last links to `/matrix?hasKql=true`). Matrix stats line is now gated to matrix routes only via `useMatch`.
 - New route `/matrix` (matrix landing page) alongside the existing `/technique/:id` (preserved unchanged so all 691 static SEO pages still generate). `MatrixPage` reads `?q=` and `?hasKql=true` URL params on mount and applies them to the filter state.
+- `docs/reviews/ai-first-audit-2026-05-25.md` — AI-first architecture audit (AI discoverability, machine-API surface, AI-augmented UX; snapshot of `main` @ `af0b3e1`). Findings feed the AI-first roadmap; no code changes in this drop.
 - Drag-to-scroll on the matrix via a new `useDragScroll` hook (`src/hooks/useDragScroll.ts`). Press-and-drag with the left mouse button anywhere in the matrix area scrolls horizontally; movement under a 5 px threshold is treated as a click so `TechniqueCell` clicks still open the detail panel. Clicks on interactive descendants (buttons, links, inputs) never start a drag. The cursor switches from `grab` to `grabbing` while dragging.
 
 ### Fixed
