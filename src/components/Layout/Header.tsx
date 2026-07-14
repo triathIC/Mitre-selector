@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import type { DataStore } from "@/core/models";
+import type { DataStore } from "@triathic/mke-core";
 
 export interface HeaderProps {
   dataStore?: DataStore | null;
