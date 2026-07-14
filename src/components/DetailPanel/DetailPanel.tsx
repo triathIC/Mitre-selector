@@ -57,7 +57,7 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleClose = useCallback(() => {
-    navigate("/");
+    navigate("/matrix");
   }, [navigate]);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function DetailPanel({ dataStore }: DetailPanelProps) {
 
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") navigate("/");
+      if (e.key === "Escape") navigate("/matrix");
     },
     [navigate]
   );
