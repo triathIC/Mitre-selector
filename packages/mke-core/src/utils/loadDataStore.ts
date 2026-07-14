@@ -1,5 +1,5 @@
-import type { DataStore, KqlMapping, MitreTechnique } from "../models";
-import { buildDataStore } from "./dataTransform";
+import type { DataStore, KqlMapping, MitreTechnique } from "../models/index.js";
+import { buildDataStore } from "./dataTransform.js";
 
 export interface LoadDataStoreUrls {
   techniquesUrl: string;

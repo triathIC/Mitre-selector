@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { Scenario } from "@/types/scenario";
+import type { Scenario } from "@triathic/mke-core";
 import { MaturityBadge } from "./MaturityBadge";
 
 export interface ScenarioCardProps {

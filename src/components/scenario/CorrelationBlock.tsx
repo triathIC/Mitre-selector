@@ -1,4 +1,4 @@
-import type { Correlation } from "@/types/scenario";
+import type { Correlation } from "@triathic/mke-core";
 
 export interface CorrelationBlockProps {
   correlation: Correlation;

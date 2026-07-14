@@ -10,8 +10,8 @@ import type {
   FilterState,
   KqlMapping,
   MitreTechnique,
-} from "@/core/models";
-import { buildDataStore } from "@/core/utils/dataTransform";
+} from "@triathic/mke-core";
+import { buildDataStore } from "@triathic/mke-core";
 import { AppContext, type AppContextValue } from "@/context/context";
 import techniquesRaw from "../../public/data/mitre_techniques.json";
 import mappingsRaw from "../../public/data/kql_mappings.json";

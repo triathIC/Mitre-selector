@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { AppAction, AppState, FilterState } from "@/core/models";
+import type { AppAction, AppState, FilterState } from "@triathic/mke-core";
 
 export type AppContextValue = {
   state: AppState;

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import type { KqlMapping, Platform } from "@/core/models";
+import type { KqlMapping, Platform } from "@triathic/mke-core";
 import { useAppContext } from "@/context/useAppContext";
 import { Button } from "@/components/ui";
-import { DEBOUNCE_MS, PLATFORMS, SEVERITY_ORDER } from "@/core/constants";
+import { DEBOUNCE_MS, PLATFORMS, SEVERITY_ORDER } from "@triathic/mke-core";
 
 const ALL_PLATFORMS: Array<Platform | "all"> = ["all", ...PLATFORMS];
 

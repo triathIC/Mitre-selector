@@ -1,4 +1,4 @@
-import type { MitreTactic, Severity } from "../models";
+import type { MitreTactic, Severity } from "../models/index.js";
 
 /**
  * Canonical MITRE ATT&CK tactic display order (left to right in matrix).
@@ -60,7 +60,7 @@ export const PLATFORMS = [
   "IaaS",
   "Network",
   "Containers",
-] as const satisfies import("../models").Platform[];
+] as const satisfies import("../models/index.js").Platform[];
 
 /**
  * Severity ranking from most to least severe — used for sorting and filter dropdowns.

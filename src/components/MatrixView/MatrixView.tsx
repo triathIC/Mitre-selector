@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { DataStore, MitreTactic } from "@/core/models";
+import type { DataStore, MitreTactic } from "@triathic/mke-core";
 import { useFilteredData } from "@/hooks/useFilteredData";
 import { useAppContext } from "@/context/useAppContext";
 import { useMatrixTilt } from "@/hooks/useMatrixTilt";

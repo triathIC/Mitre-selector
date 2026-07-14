@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { DataStore, MitreTechnique, MitreTactic } from "@/core/models";
+import type { DataStore, MitreTechnique, MitreTactic } from "@triathic/mke-core";
 import { useAppContext } from "@/context/useAppContext";
 
 export interface FilteredResult {

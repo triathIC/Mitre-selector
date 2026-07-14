@@ -6,7 +6,7 @@ import security from "eslint-plugin-security";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "dist-node", "node_modules", "data/*.json"] },
+  { ignores: ["dist", "dist-node", "node_modules", "data/*.json", "packages/*/dist"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     files: ["**/*.{ts,tsx}"],
@@ -14,7 +14,11 @@ export default tseslint.config(
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        project: ["./tsconfig.json", "./tsconfig.node.json"],
+        project: [
+          "./tsconfig.json",
+          "./tsconfig.node.json",
+          "./packages/mke-core/tsconfig.json",
+        ],
       },
     },
     plugins: {

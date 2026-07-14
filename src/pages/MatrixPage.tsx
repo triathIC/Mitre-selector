@@ -5,7 +5,7 @@ import { useAppContext } from "@/context/useAppContext";
 import { FilterBar } from "@/components/FilterBar";
 import { MatrixView } from "@/components/MatrixView";
 import { Seo, MAX_TOP_TECHNIQUES, type SeoTopTechnique } from "@/components/Seo";
-import type { DataStore } from "@/core/models";
+import type { DataStore } from "@triathic/mke-core";
 
 const DetailPanel = lazy(() =>
   import("@/components/DetailPanel").then((m) => ({ default: m.DetailPanel }))

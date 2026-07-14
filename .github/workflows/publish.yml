@@ -1,0 +1,40 @@
+# Publishes @triathic/mke-core to GitHub Packages when a package tag
+# (mke-core-v*) is pushed — e.g. creating the GitHub Release
+# mke-core-v0.1.0. The package-scoped tag namespace keeps app release
+# tags (v0.2.0, …) from re-triggering the publish. Auth uses the
+# workflow's own GITHUB_TOKEN (packages: write); no PAT required.
+name: Publish mke-core
+
+on:
+  push:
+    tags: ["mke-core-v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: "@triathic"
+
+      - name: Install dependencies (workspace-aware; prepare builds the package)
+        run: npm ci
+
+      - name: Build package
+        run: npm run build --workspace packages/mke-core
+
+      - name: Publish to GitHub Packages
+        run: npm publish --workspace packages/mke-core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
