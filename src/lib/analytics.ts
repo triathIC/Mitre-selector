@@ -15,7 +15,7 @@ export type AnalyticsEvent =
  */
 export function trackEvent(event: AnalyticsEvent): void {
   try {
-    track(event.name, event.props as Record<string, string | number | boolean>);
+    track(event.name, event.props);
   } catch (err) {
     if (import.meta.env.DEV) {
       console.warn("[analytics] tracking failed", err);

@@ -93,7 +93,7 @@ export function MatrixView({ dataStore }: MatrixViewProps) {
 
   const tactics = dataStore.tactics;
   const firstTactic = tactics[0];
-  const effectiveTactic = (mobileTactic || firstTactic) as MitreTactic | undefined;
+  const effectiveTactic = mobileTactic || firstTactic;
 
   if (!effectiveTactic) {
     return <div className="p-4 text-gray-500">No tactics available.</div>;
