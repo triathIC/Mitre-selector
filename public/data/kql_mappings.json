@@ -2696,5 +2696,145 @@
     "version": 1,
     "confidence": "experimental",
     "tuning_notes": "Original-Query nutzte Windows SecurityEvent (EventID 4688) — auf Linux nicht vorhanden. Adaptiert auf MDE for Linux DeviceProcessEvents. FolderPath-Filter '/bin/' schließt Windows-Devices und ungewöhnliche Pfade aus. Falls auch andere Pfade relevant sind (z.B. /usr/bin/cp), Filter erweitern. CI/CD-Pipelines und Container-Build-Skripte auf AKS-Nodes können legitime --no-preserve-Aufrufe enthalten — Allowlist via InitiatingProcessFileName (z.B. dockerd, containerd-shim) empfohlen. Bei Treffern parallel DeviceFileEvents auf SUID-Files (chmod u+s) für vollständige Exploit-Chain prüfen."
+  },
+  {
+    "mapping_id": "KQL-T1204.004-001",
+    "technique_id": "T1204.004",
+    "additional_technique_ids": [
+      "T1218.005",
+      "T1547.001",
+      "T1685"
+    ],
+    "product": "Defender XDR",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": [
+      "DeviceProcessEvents",
+      "DeviceRegistryEvents"
+    ],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "ClickFix Chain Correlation: Proxy Execution + AppData Persistence + Defender Tamper",
+    "description": "High-confidence correlation for a ClickFix intrusion (Huntress: Potemkin loader / RMMProject). Each leg is individually noisy – pcalua-proxied mshta/msiexec, a Run-key write into AppData, and Set-MpPreference/Stop-Service WinDefend all occur in benign administration. This rule fires only when all three land on the same DeviceId within a 30-minute window, which does not happen in normal operations. The fidelity comes from the join, not any single leg.",
+    "kql": "let lookback = 3d;\nlet proxyChain = DeviceProcessEvents\n    | where Timestamp > ago(lookback)\n    | where InitiatingProcessFileName =~ \"pcalua.exe\" and FileName in~ (\"mshta.exe\", \"msiexec.exe\")\n    | project DeviceId, DeviceName, ProxyTime = Timestamp, ProxyCmd = ProcessCommandLine;\nlet runKey = DeviceRegistryEvents\n    | where Timestamp > ago(lookback)\n    | where ActionType == \"RegistryValueSet\"\n    | where RegistryKey has \"CurrentVersion\" and RegistryKey has \"Run\"\n    | where RegistryValueData has_any (\"AppData\", \"ProgramData\")\n    | project DeviceId, KeyTime = Timestamp, RegistryValueData;\nlet defenderTamper = DeviceProcessEvents\n    | where Timestamp > ago(lookback)\n    | where ProcessCommandLine has_any (\"Set-MpPreference\", \"Add-MpPreference -ExclusionPath\", \"DisableRealtimeMonitoring\", \"Stop-Service WinDefend\")\n    | project DeviceId, TamperTime = Timestamp, TamperCmd = ProcessCommandLine;\nproxyChain\n| join kind=inner runKey on DeviceId\n| join kind=inner defenderTamper on DeviceId\n| where abs(datetime_diff('minute', ProxyTime, KeyTime)) <= 30\n    and abs(datetime_diff('minute', ProxyTime, TamperTime)) <= 30\n| project DeviceName, DeviceId, ProxyTime, ProxyCmd, KeyTime, RegistryValueData, TamperTime, TamperCmd, chain = \"ClickFix->Loader->DefenderTamper\"\n| sort by ProxyTime asc",
+    "tags": [
+      "clickfix",
+      "correlation",
+      "lolbin",
+      "stealth",
+      "defense-impairment",
+      "persistence",
+      "windows"
+    ],
+    "author": "triathIC",
+    "references": [
+      "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack",
+      "https://cybersecuritynews.com/hackers-use-clickfix-prompt-to-install-msi-package/",
+      "https://attack.mitre.org/techniques/T1204/004/"
+    ],
+    "last_tested": "2026-07-24",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Widen the 30m window if the operator spaces the legs out; narrow it to cut FPs in noisy admin environments. Add a first-leg anchor (unsigned/AppData process creation) to raise precision. Worthless on an unmonitored endpoint – the join needs the on-device telemetry that patient zero lacked."
+  },
+  {
+    "mapping_id": "KQL-T1218.005-002",
+    "technique_id": "T1218.005",
+    "additional_technique_ids": [
+      "T1218.007",
+      "T1204.004"
+    ],
+    "product": "Defender XDR",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": [
+      "DeviceProcessEvents"
+    ],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "pcalua.exe Proxying mshta/msiexec (ClickFix LOLBin Chain)",
+    "description": "Detects the ClickFix LOLBin proxy chain where the signed Program Compatibility Assistant launcher pcalua.exe spawns mshta.exe or msiexec.exe. Using pcalua as the parent breaks the explorer/browser -> mshta ancestry that most rules key on, and lets a remote HTA silently pull and install an MSI (Potemkin loader). Covers kill-chain steps 2–3.",
+    "kql": "DeviceProcessEvents\n| where Timestamp > ago(3d)\n| where InitiatingProcessFileName =~ \"pcalua.exe\"\n| where FileName in~ (\"mshta.exe\", \"msiexec.exe\")\n| project Timestamp, DeviceName, DeviceId, AccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, FileName, ProcessCommandLine\n| sort by Timestamp asc",
+    "tags": [
+      "clickfix",
+      "lolbin",
+      "mshta",
+      "msiexec",
+      "pcalua",
+      "stealth",
+      "windows"
+    ],
+    "author": "triathIC",
+    "references": [
+      "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack",
+      "https://cybersecuritynews.com/hackers-use-clickfix-prompt-to-install-msi-package/",
+      "https://attack.mitre.org/techniques/T1218/005/"
+    ],
+    "last_tested": "2026-07-24",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Key on the pcalua -> mshta|msiexec parent/child edge, not on mshta/msiexec alone. A renamed mshta/msiexec evades the FileName match – corroborate with the remote HTA/MSI URL on the command line and the follow-on drop under AppData\\\\Local."
+  },
+  {
+    "mapping_id": "KQL-T1547.001-003",
+    "technique_id": "T1547.001",
+    "product": "Defender XDR",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": [
+      "DeviceRegistryEvents"
+    ],
+    "query_type": "hunting",
+    "severity": "medium",
+    "title": "Run Key Persistence Pointing to AppData/ProgramData Executable",
+    "description": "Surfaces HKCU/HKLM CurrentVersion\\\\Run (and RunOnce) value writes whose data points at an executable under AppData or ProgramData – the persistence Potemkin's MSI installs (Run\\\\RunSearch -> AppData\\\\Local RunSearch.exe). Medium fidelity alone; primarily a correlation input for the ClickFix chain rule.",
+    "kql": "DeviceRegistryEvents\n| where Timestamp > ago(3d)\n| where ActionType == \"RegistryValueSet\"\n| where RegistryKey has \"CurrentVersion\" and RegistryKey has \"Run\"\n| where RegistryValueData has_any (\"AppData\", \"ProgramData\")\n| where RegistryValueData has \".exe\"\n| project Timestamp, DeviceName, InitiatingProcessAccountName, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessFileName\n| sort by Timestamp asc",
+    "tags": [
+      "clickfix",
+      "persistence",
+      "run-key",
+      "registry",
+      "windows"
+    ],
+    "author": "triathIC",
+    "references": [
+      "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack",
+      "https://cybersecuritynews.com/hackers-use-clickfix-prompt-to-install-msi-package/",
+      "https://attack.mitre.org/techniques/T1547/001/"
+    ],
+    "last_tested": "2026-07-24",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "Many legitimate updaters and sync clients auto-start from AppData – expect volume, hence hunting not detection. Tighten by joining to a recent unsigned/AppData process creation on the same device, or allowlist known-good value data."
+  },
+  {
+    "mapping_id": "KQL-T1685-003",
+    "technique_id": "T1685",
+    "product": "Defender XDR",
+    "data_connector": "Microsoft Defender for Endpoint",
+    "log_sources": [
+      "DeviceProcessEvents",
+      "DeviceRegistryEvents"
+    ],
+    "query_type": "detection",
+    "severity": "high",
+    "title": "Microsoft Defender Teardown: Set-MpPreference / Exclusions / Service Stop",
+    "description": "Detects the staged Defender teardown seen in the Potemkin ClickFix intrusion: Set-MpPreference toggles (real-time, IOAV, behavior, script), Add-MpPreference exclusion paths, and WinDefend/wscsvc/SecurityHealthService service stops or start=disabled. Maps to ATT&CK v19 T1685 (Disable or Modify Tools, tactic Defense Impairment) – the legacy T1562.001 no longer exists in v19.1.",
+    "kql": "DeviceProcessEvents\n| where Timestamp > ago(3d)\n| where ProcessCommandLine has_any (\n    \"Set-MpPreference\", \"Add-MpPreference -ExclusionPath\",\n    \"DisableRealtimeMonitoring\", \"DisableIOAVProtection\", \"DisableBehaviorMonitoring\", \"DisableScriptScanning\",\n    \"Stop-Service WinDefend\", \"config WinDefend start= disabled\", \"Stop-Service wscsvc\", \"Stop-Service SecurityHealthService\")\n| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine\n| sort by Timestamp asc",
+    "tags": [
+      "clickfix",
+      "defense-impairment",
+      "stealth",
+      "defender",
+      "tamper",
+      "windows"
+    ],
+    "author": "triathIC",
+    "references": [
+      "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack",
+      "https://cybersecuritynews.com/hackers-use-clickfix-prompt-to-install-msi-package/",
+      "https://attack.mitre.org/techniques/T1685/"
+    ],
+    "last_tested": "2026-07-24",
+    "version": 1,
+    "confidence": "experimental",
+    "tuning_notes": "FP: AV migrations and legitimate IT maintenance touch these controls. The tell is the SEQUENCE (toggles -> exclusion -> service stop) on one host in minutes, ideally right after an AppData-resident process appeared. FN: the in-memory AMSI patch never hits a command line, so this catches the PowerShell/sc.exe legs, not the patch."
   }
 ]
